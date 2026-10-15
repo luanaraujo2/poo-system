@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GestaoTempo.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b6006e1c2bfa4c7cc8c9015d4951e7fc2f7f8a8e")]
 [assembly: System.Reflection.AssemblyProductAttribute("GestaoTempo.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GestaoTempo.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
