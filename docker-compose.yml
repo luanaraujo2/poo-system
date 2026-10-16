@@ -1,0 +1,15 @@
+# Opcional: sobe um PostgreSQL local com o mesmo usuário/senha do appsettings.Development.json
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sgt
+    ports:
+      - "5432:5432"
+    volumes:
+      - sgt-dados:/var/lib/postgresql/data
+
+volumes:
+  sgt-dados:

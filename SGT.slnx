@@ -1,6 +1,6 @@
 <Solution>
-  <Folder Name="/Gestaotempo.Domain/">
-    <Project Path="Gestaotempo.Domain/GestaoTempo.Domain.csproj" />
+  <Folder Name="/GestaoTempo.Domain/">
+    <Project Path="GestaoTempo.Domain/GestaoTempo.Domain.csproj" />
   </Folder>
   <Project Path="GestaoTempo.Api/GestaoTempo.Api.csproj" />
 </Solution>
