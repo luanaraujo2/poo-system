@@ -1,6 +1,6 @@
 # SGT - Sistema de Gestão do Tempo
 
-Projeto prático da faculdade, desenvolvido em sprints.
+Projeto FullStack para um melhor aproveitamento do seu tempo.
 
 **Integrantes:** Luan Araujo de Oliveira, Murilo Cipriano Carvalho, João Vitor de Carvalho Loureiro e Henrique de Paula Balbino.
 
