@@ -1,6 +1,147 @@
-@SGT.Api_HostAddress = http://localhost:5224
+@host = http://localhost:5224
+# Em Development o usuário vem do cabeçalho X-Usuario-Id (1 = teste@sgt.local).
+@usuario = 1
 
-GET {{GestaoTempo.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### 1. Listar categorias do usuário (esperado: 200 com 5 categorias)
+GET {{host}}/api/categorias
+X-Usuario-Id: {{usuario}}
 
-###
+### 2. Cadastrar tarefa válida (esperado: 201, status "Pendente")
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Estudar para a prova de POO",
+  "descricao": "Revisar herança e polimorfismo",
+  "prazo": "2026-12-31T18:00:00-03:00",
+  "estimativaMin": 90,
+  "categoriaId": 2,
+  "criticidade": "Alta",
+  "complexidade": "Media",
+  "prioridade": "Urgente_Importante"
+}
+
+### 3. Título com menos de 3 letras (esperado: 400 "O título da tarefa deve ter pelo menos 3 caracteres.")
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "",
+  "prazo": "2026-12-31T18:00:00-03:00",
+  "estimativaMin": 30,
+  "categoriaId": 3,
+  "criticidade": "Baixa",
+  "complexidade": "Baixa",
+  "prioridade": "NaoUrgente_NaoImportante"
+}
+
+### 4. Sem tempo estimado (esperado: 400 "A estimativa de tempo deve ser maior que zero.")
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Tarefa sem estimativa",
+  "prazo": "2026-12-31T18:00:00-03:00",
+  "categoriaId": 3,
+  "criticidade": "Baixa",
+  "complexidade": "Baixa",
+  "prioridade": "NaoUrgente_NaoImportante"
+}
+
+### 5. Sem prazo (esperado: 400 "O prazo é obrigatório.")
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Tarefa sem prazo",
+  "estimativaMin": 30,
+  "categoriaId": 3,
+  "criticidade": "Baixa",
+  "complexidade": "Baixa",
+  "prioridade": "NaoUrgente_NaoImportante"
+}
+
+### 6. Prazo no passado (esperado: 400 "O prazo da tarefa deve ser uma data futura.")
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Tarefa com prazo vencido",
+  "prazo": "2020-01-01T10:00:00-03:00",
+  "estimativaMin": 30,
+  "categoriaId": 3,
+  "criticidade": "Baixa",
+  "complexidade": "Baixa",
+  "prioridade": "NaoUrgente_NaoImportante"
+}
+
+### 7. Prazo daqui a 1 hora (esperado: 201)
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Tarefa com prazo para daqui a pouco",
+  "prazo": "{{$datetime iso8601 1 h}}",
+  "estimativaMin": 30,
+  "categoriaId": 3,
+  "criticidade": "Baixa",
+  "complexidade": "Baixa",
+  "prioridade": "NaoUrgente_NaoImportante"
+}
+
+### 8. Sem criticidade (esperado: 400 "Informe a criticidade.")
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Tarefa sem criticidade",
+  "prazo": "2026-12-31T18:00:00-03:00",
+  "estimativaMin": 30,
+  "categoriaId": 3,
+  "complexidade": "Baixa",
+  "prioridade": "NaoUrgente_NaoImportante"
+}
+
+### 9. Categoria que não existe (esperado: 400 "Categoria inválida.")
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Tarefa em categoria inexistente",
+  "prazo": "2026-12-31T18:00:00-03:00",
+  "estimativaMin": 30,
+  "categoriaId": 9999,
+  "criticidade": "Baixa",
+  "complexidade": "Baixa",
+  "prioridade": "NaoUrgente_NaoImportante"
+}
+
+### 10. Sem o cabeçalho X-Usuario-Id (esperado: 401)
+POST {{host}}/api/tarefas
+Content-Type: application/json
+
+{
+  "titulo": "Tarefa sem usuário",
+  "prazo": "2026-12-31T18:00:00-03:00",
+  "estimativaMin": 30,
+  "categoriaId": 3,
+  "criticidade": "Baixa",
+  "complexidade": "Baixa",
+  "prioridade": "NaoUrgente_NaoImportante"
+}
+
+### 11. Listar tarefas do usuário, por prazo (esperado: 200)
+GET {{host}}/api/tarefas
+X-Usuario-Id: {{usuario}}
+
+### 12. Obter uma tarefa pelo id (troque o 1 pelo id devolvido no teste 2)
+GET {{host}}/api/tarefas/1
+X-Usuario-Id: {{usuario}}

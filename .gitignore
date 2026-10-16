@@ -1,0 +1,13 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# Node / Vue
+node_modules/
+dist/
+
+# Sistema
+.DS_Store
+Thumbs.db
