@@ -77,6 +77,30 @@ public class TarefasController : ControllerBase
         return CreatedAtAction(nameof(Obter), new { id = tarefa.Id }, resposta);
     }
 
+    // Vincula duas tarefas já cadastradas, mantendo o vínculo dentro do usuário autenticado.
+    [HttpPost("{idPai:int}/subtarefas/{idFilha:int}")]
+    public async Task<IActionResult> AdicionarSubtarefa(int idPai, int idFilha)
+    {
+        if (_usuarioAtual.Id is not int usuarioId)
+            return Unauthorized(new ErroResponse("Usuário não identificado."));
+
+        var pai = await _db.Tarefas.FirstOrDefaultAsync(t => t.Id == idPai && t.UsuarioId == usuarioId);
+        var filha = await _db.Tarefas.FirstOrDefaultAsync(t => t.Id == idFilha && t.UsuarioId == usuarioId);
+        if (pai is null || filha is null)
+            return NotFound(new ErroResponse("Tarefa não encontrada."));
+
+        try
+        {
+            pai.AdicionarSubtarefa(filha);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ErroResponse(ex.Message));
+        }
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
     [HttpGet("{id:int}")]
     public async Task<ActionResult<TarefaResponse>> Obter(int id)
     {
@@ -107,5 +131,6 @@ public class TarefasController : ControllerBase
         orderby t.Prazo
         select new TarefaResponse(
             t.Id, t.Titulo, t.Descricao, t.Prazo, t.EstimativaMin,
-            c.Id, c.Nome, t.Criticidade, t.Complexidade, t.Prioridade, t.Status, t.CriadoEm);
+            c.Id, c.Nome, t.Criticidade, t.Complexidade, t.Prioridade, t.Status, t.CriadoEm,
+            t.Subtarefas.Select(sub => sub.Id).ToList());
 }

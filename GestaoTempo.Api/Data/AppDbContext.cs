@@ -66,6 +66,7 @@ public class AppDbContext : DbContext
             e.ToTable("tarefa", t =>
             {
                 t.HasCheckConstraint("CK_tarefa_estimativa_positiva", "estimativa_min > 0");
+                t.HasCheckConstraint("CK_tarefa_nao_pode_ser_pai_de_si_mesma", "id_tarefa_pai IS NULL OR id_tarefa_pai <> id_tarefa");
                 t.HasCheckConstraint("CK_tarefa_titulo_preenchido", "char_length(btrim(titulo)) > 0");
                 t.HasCheckConstraint("CK_tarefa_tempo_real_nao_negativo", "tempo_real_min >= 0");
                 t.HasCheckConstraint("CK_tarefa_status_valido",
@@ -78,6 +79,8 @@ public class AppDbContext : DbContext
                     "prioridade IN ('Urgente_Importante', 'Importante_NaoUrgente', 'Urgente_NaoImportante', 'NaoUrgente_NaoImportante')");
             });
             e.HasKey(t => t.Id);
+            e.HasAlternateKey(t => new { t.Id, t.UsuarioId });
+            e.Property(t => t.TarefaPaiId).HasColumnName("id_tarefa_pai");
             e.Property(t => t.Id).HasColumnName("id_tarefa");
             e.Property(t => t.UsuarioId).HasColumnName("id_usuario");
             e.Property(t => t.CategoriaId).HasColumnName("id_categoria");
@@ -102,6 +105,14 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(t => t.UsuarioId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // A FK composta impede que pai e filha pertençam a usuários diferentes.
+            e.HasOne(t => t.TarefaPai)
+                .WithMany(t => t.Subtarefas)
+                .HasForeignKey(t => new { t.TarefaPaiId, t.UsuarioId })
+                .HasPrincipalKey(t => new { t.Id, t.UsuarioId })
+                .OnDelete(DeleteBehavior.Restrict);
+            e.Navigation(t => t.Subtarefas).UsePropertyAccessMode(PropertyAccessMode.Field);
+
             e.HasOne<Categoria>()
                 .WithMany()
                 .HasForeignKey(t => t.CategoriaId)

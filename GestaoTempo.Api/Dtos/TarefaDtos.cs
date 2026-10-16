@@ -24,7 +24,8 @@ public record TarefaResponse(
     Complexidade Complexidade,
     Prioridade Prioridade,
     StatusTarefa Status,
-    DateTime CriadoEm);
+    DateTime CriadoEm,
+    IReadOnlyList<int> SubtarefasIds);
 
 public record CategoriaResponse(int Id, string Nome, string? Cor, bool Padrao);
 
