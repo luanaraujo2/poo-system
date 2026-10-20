@@ -1,6 +1,60 @@
 @host = http://localhost:5224
-# Em Development o usuário vem do cabeçalho X-Usuario-Id (1 = teste@sgt.local).
+# Nos testes da US03 o usuário vem do cabeçalho X-Usuario-Id (1 = teste@sgt.local), só em Development.
+# O front usa o token do login (testes A a F).
 @usuario = 1
+
+### A. US01 - Criar conta (esperado: 201)
+POST {{host}}/api/usuarios
+Content-Type: application/json
+
+{
+  "nome": "Ana Clara",
+  "email": "ana.clara@email.com",
+  "senha": "12345678"
+}
+
+### B. US01 - E-mail já cadastrado, com letras maiúsculas (esperado: 409 "Este e-mail já está cadastrado.")
+POST {{host}}/api/usuarios
+Content-Type: application/json
+
+{
+  "nome": "Ana Clara",
+  "email": "ANA.CLARA@email.com",
+  "senha": "12345678"
+}
+
+### C. US01 - Senha curta (esperado: 400 "A senha deve ter pelo menos 8 caracteres.")
+POST {{host}}/api/usuarios
+Content-Type: application/json
+
+{
+  "nome": "Ana Clara",
+  "email": "outra@email.com",
+  "senha": "123"
+}
+
+### D. US02 - Entrar (esperado: 200 com o token)
+# @name login
+POST {{host}}/api/login
+Content-Type: application/json
+
+{
+  "email": "ana.clara@email.com",
+  "senha": "12345678"
+}
+
+### E. US02 - Senha errada (esperado: 401 "E-mail ou senha inválidos.", a mesma mensagem de e-mail inexistente)
+POST {{host}}/api/login
+Content-Type: application/json
+
+{
+  "email": "ana.clara@email.com",
+  "senha": "senha-errada"
+}
+
+### F. US02 - Usar o token do teste D (esperado: 200 com os dados da Ana)
+GET {{host}}/api/usuarios/eu
+Authorization: Bearer {{login.response.body.token}}
 
 ### 1. Listar categorias do usuário (esperado: 200 com 5 categorias)
 GET {{host}}/api/categorias

@@ -1,7 +1,9 @@
 using System.Text.Json.Serialization;
 using GestaoTempo.Api.Data;
 using GestaoTempo.Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,21 @@ builder.Services.AddControllers()
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<UsuarioAtual>();
+builder.Services.AddSingleton<GeradorDeToken>();
+
+// Login por token (US02): o front manda "Authorization: Bearer <token>" em cada requisição.
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(o => o.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration["Jwt:Emissor"],
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration["Jwt:Emissor"],
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = GeradorDeToken.ChaveDeAssinatura(builder.Configuration),
+    });
+builder.Services.AddAuthorization();
 builder.Services.AddOpenApi();
 
 // Libera o front-end (Vue/Vite roda em http://localhost:5173)
@@ -37,6 +54,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
