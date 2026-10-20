@@ -111,8 +111,8 @@ Resposta 201 (a mesma forma vale para `GET /api/tarefas` e `GET /api/tarefas/{id
 As regras de nome, e-mail, título, tempo estimado e prazo ficam nos construtores das classes do Domain; a API confere o restante.
 
 **Conta**
-- Nome com pelo menos 3 caracteres.
-- E-mail válido (com @) e ainda não cadastrado, sem diferenciar maiúsculas.
+- Nome com pelo menos 3 e no máximo 100 caracteres.
+- E-mail válido (com @), com no máximo 150 caracteres e ainda não cadastrado, sem diferenciar maiúsculas.
 - Senha com pelo menos 8 caracteres.
 
 **Tarefa**

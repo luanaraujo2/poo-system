@@ -14,6 +14,10 @@ public class UsuariosController : ControllerBase
 {
     public const int TamanhoMinimoSenha = 8;
 
+    // Limites das colunas nome e email (AppDbContext).
+    public const int TamanhoMaximoNome = 100;
+    public const int TamanhoMaximoEmail = 150;
+
     private readonly AppDbContext _db;
     private readonly UsuarioAtual _usuarioAtual;
 
@@ -31,6 +35,10 @@ public class UsuariosController : ControllerBase
         var email = req.Email?.Trim() ?? string.Empty;
         var senha = req.Senha ?? string.Empty;
 
+        if (nome.Length > TamanhoMaximoNome)
+            return BadRequest(new ErroResponse($"O nome pode ter no máximo {TamanhoMaximoNome} caracteres."));
+        if (email.Length > TamanhoMaximoEmail)
+            return BadRequest(new ErroResponse($"O e-mail pode ter no máximo {TamanhoMaximoEmail} caracteres."));
         if (senha.Length < TamanhoMinimoSenha)
             return BadRequest(new ErroResponse($"A senha deve ter pelo menos {TamanhoMinimoSenha} caracteres."));
 
