@@ -1,6 +1,7 @@
 @host = http://localhost:5224
-# Nos testes da US03 o usuário vem do cabeçalho X-Usuario-Id (1 = teste@sgt.local), só em Development.
-# O front usa o token do login (testes A a F).
+# Testes A a G (cadastro e login): o teste F usa o token do teste D.
+# Testes 1 a 16 (tarefas): o usuário vem do cabeçalho X-Usuario-Id (1 = teste@sgt.local), só em Development.
+# Os prazos são relativos a hoje. Rode os testes 2 e 7 antes do 12 ao 16, que usam os ids que eles devolvem.
 @usuario = 1
 
 ### A. US01 - Criar conta (esperado: 201)
@@ -33,6 +34,26 @@ Content-Type: application/json
   "senha": "123"
 }
 
+### C2. US01 - Nome com mais de 100 caracteres (esperado: 400 "O nome pode ter no máximo 100 caracteres.")
+POST {{host}}/api/usuarios
+Content-Type: application/json
+
+{
+  "nome": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "email": "nome.longo@email.com",
+  "senha": "12345678"
+}
+
+### C3. US01 - E-mail com mais de 150 caracteres (esperado: 400 "O e-mail pode ter no máximo 150 caracteres.")
+POST {{host}}/api/usuarios
+Content-Type: application/json
+
+{
+  "nome": "Ana Clara",
+  "email": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@email.com",
+  "senha": "12345678"
+}
+
 ### D. US02 - Entrar (esperado: 200 com o token)
 # @name login
 POST {{host}}/api/login
@@ -56,11 +77,16 @@ Content-Type: application/json
 GET {{host}}/api/usuarios/eu
 Authorization: Bearer {{login.response.body.token}}
 
+### G. US02 - Token inválido (esperado: 401 "Usuário não identificado.")
+GET {{host}}/api/usuarios/eu
+Authorization: Bearer token-invalido
+
 ### 1. Listar categorias do usuário (esperado: 200 com 5 categorias)
 GET {{host}}/api/categorias
 X-Usuario-Id: {{usuario}}
 
 ### 2. Cadastrar tarefa válida (esperado: 201, status "Pendente")
+# @name tarefaPai
 POST {{host}}/api/tarefas
 Content-Type: application/json
 X-Usuario-Id: {{usuario}}
@@ -68,7 +94,7 @@ X-Usuario-Id: {{usuario}}
 {
   "titulo": "Estudar para a prova de POO",
   "descricao": "Revisar herança e polimorfismo",
-  "prazo": "2026-12-31T18:00:00-03:00",
+  "prazo": "{{$datetime iso8601 30 d}}",
   "estimativaMin": 90,
   "categoriaId": 2,
   "criticidade": "Alta",
@@ -83,7 +109,7 @@ X-Usuario-Id: {{usuario}}
 
 {
   "titulo": "",
-  "prazo": "2026-12-31T18:00:00-03:00",
+  "prazo": "{{$datetime iso8601 30 d}}",
   "estimativaMin": 30,
   "categoriaId": 3,
   "criticidade": "Baixa",
@@ -98,7 +124,7 @@ X-Usuario-Id: {{usuario}}
 
 {
   "titulo": "Tarefa sem estimativa",
-  "prazo": "2026-12-31T18:00:00-03:00",
+  "prazo": "{{$datetime iso8601 30 d}}",
   "categoriaId": 3,
   "criticidade": "Baixa",
   "complexidade": "Baixa",
@@ -135,6 +161,7 @@ X-Usuario-Id: {{usuario}}
 }
 
 ### 7. Prazo daqui a 1 hora (esperado: 201)
+# @name tarefaFilha
 POST {{host}}/api/tarefas
 Content-Type: application/json
 X-Usuario-Id: {{usuario}}
@@ -156,7 +183,7 @@ X-Usuario-Id: {{usuario}}
 
 {
   "titulo": "Tarefa sem criticidade",
-  "prazo": "2026-12-31T18:00:00-03:00",
+  "prazo": "{{$datetime iso8601 30 d}}",
   "estimativaMin": 30,
   "categoriaId": 3,
   "complexidade": "Baixa",
@@ -170,7 +197,7 @@ X-Usuario-Id: {{usuario}}
 
 {
   "titulo": "Tarefa em categoria inexistente",
-  "prazo": "2026-12-31T18:00:00-03:00",
+  "prazo": "{{$datetime iso8601 30 d}}",
   "estimativaMin": 30,
   "categoriaId": 9999,
   "criticidade": "Baixa",
@@ -184,7 +211,7 @@ Content-Type: application/json
 
 {
   "titulo": "Tarefa sem usuário",
-  "prazo": "2026-12-31T18:00:00-03:00",
+  "prazo": "{{$datetime iso8601 30 d}}",
   "estimativaMin": 30,
   "categoriaId": 3,
   "criticidade": "Baixa",
@@ -196,6 +223,22 @@ Content-Type: application/json
 GET {{host}}/api/tarefas
 X-Usuario-Id: {{usuario}}
 
-### 12. Obter uma tarefa pelo id (troque o 1 pelo id devolvido no teste 2)
-GET {{host}}/api/tarefas/1
+### 12. Obter a tarefa do teste 2 pelo id (esperado: 200)
+GET {{host}}/api/tarefas/{{tarefaPai.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 13. Vincular subtarefa: tarefa do teste 7 (30 min) dentro da do teste 2 (90 min) (esperado: 204)
+POST {{host}}/api/tarefas/{{tarefaPai.response.body.id}}/subtarefas/{{tarefaFilha.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 14. Vincular a mesma subtarefa de novo (esperado: 400 "Esta tarefa já está vinculada a uma tarefa-pai.")
+POST {{host}}/api/tarefas/{{tarefaPai.response.body.id}}/subtarefas/{{tarefaFilha.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 15. Subtarefa que não existe (esperado: 404 "Tarefa não encontrada.")
+POST {{host}}/api/tarefas/{{tarefaPai.response.body.id}}/subtarefas/999999
+X-Usuario-Id: {{usuario}}
+
+### 16. Ver a tarefa-pai depois do vínculo (esperado: 200, "subtarefasIds" com o id da subtarefa)
+GET {{host}}/api/tarefas/{{tarefaPai.response.body.id}}
 X-Usuario-Id: {{usuario}}

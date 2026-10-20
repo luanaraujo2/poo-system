@@ -26,9 +26,9 @@ Não rode com esses arquivos abertos. Abra um arquivo `.cs` e use **Executar > E
 
 Em alguns PCs com Windows o `localhost` não conecta pelo REST Client nem pelo Node. Troque `localhost` por `127.0.0.1` no `@host` do `GestaoTempo.Api.http` só na sua máquina, e não envie essa troca no commit. O proxy do front já usa `127.0.0.1`.
 
-## Todos os testes de tarefa do `.http` dão 400
+## Os testes 12 a 16 do `.http` dão erro
 
-Os exemplos usam prazo em `2026-12-31`. Depois dessa data, a regra do prazo recusa o cadastro. Troque por uma data futura.
+Eles usam os ids devolvidos pelos testes 2 (`tarefaPai`) e 7 (`tarefaFilha`). Rode o 2 e o 7 antes, na mesma sessão do VS Code. Os prazos dos testes são relativos à data de hoje, então não precisam ser trocados.
 
 ## Erro de migration ao dar `git pull`
 
