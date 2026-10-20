@@ -9,25 +9,24 @@ namespace GestaoTempo.Api.Controllers;
 
 [ApiController]
 [Route("api/tarefas")]
-public class TarefasController : ControllerBase
+public class TarefasController : ControllerAutenticado
 {
     private const int TamanhoMaximoTitulo = 150;
 
     private readonly AppDbContext _db;
-    private readonly UsuarioAtual _usuarioAtual;
 
     public TarefasController(AppDbContext db, UsuarioAtual usuarioAtual)
+        : base(usuarioAtual)
     {
         _db = db;
-        _usuarioAtual = usuarioAtual;
     }
 
     // US03 - Cadastrar tarefa
     [HttpPost]
     public async Task<ActionResult<TarefaResponse>> Criar(CriarTarefaRequest req)
     {
-        if (_usuarioAtual.Id is not int usuarioId)
-            return Unauthorized(new ErroResponse("Usuário não identificado."));
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
 
         // Campos que a classe Tarefa não confere sozinha.
         if (req.Titulo is not null && req.Titulo.Length > TamanhoMaximoTitulo)
@@ -81,8 +80,8 @@ public class TarefasController : ControllerBase
     [HttpPost("{idPai:int}/subtarefas/{idFilha:int}")]
     public async Task<IActionResult> AdicionarSubtarefa(int idPai, int idFilha)
     {
-        if (_usuarioAtual.Id is not int usuarioId)
-            return Unauthorized(new ErroResponse("Usuário não identificado."));
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
 
         var pai = await _db.Tarefas.FirstOrDefaultAsync(t => t.Id == idPai && t.UsuarioId == usuarioId);
         var filha = await _db.Tarefas.FirstOrDefaultAsync(t => t.Id == idFilha && t.UsuarioId == usuarioId);
@@ -104,8 +103,8 @@ public class TarefasController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<TarefaResponse>> Obter(int id)
     {
-        if (_usuarioAtual.Id is not int usuarioId)
-            return Unauthorized(new ErroResponse("Usuário não identificado."));
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
 
         var tarefa = await Consultar(usuarioId, id).FirstOrDefaultAsync();
         if (tarefa is null) return NotFound();
@@ -117,8 +116,8 @@ public class TarefasController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<TarefaResponse>>> Listar()
     {
-        if (_usuarioAtual.Id is not int usuarioId)
-            return Unauthorized(new ErroResponse("Usuário não identificado."));
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
 
         return await Consultar(usuarioId).ToListAsync();
     }

@@ -4,11 +4,10 @@ namespace GestaoTempo.Api.Services;
 
 // Descobre qual usuário está fazendo a requisição.
 //
-// Quando o login (US02) estiver pronto, o token deve trazer o id do usuário
-// na claim NameIdentifier; esta classe já lê dali.
+// O token do login (US02) traz o id do usuário na claim NameIdentifier.
 //
-// Enquanto o login não existe, em ambiente de desenvolvimento dá para
-// informar o usuário pelo cabeçalho "X-Usuario-Id" (ex.: X-Usuario-Id: 1).
+// Só em ambiente de desenvolvimento, também dá para informar o usuário pelo
+// cabeçalho "X-Usuario-Id" (ex.: X-Usuario-Id: 1), para os testes do .http.
 public class UsuarioAtual
 {
     private readonly IHttpContextAccessor _http;

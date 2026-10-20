@@ -1,0 +1,62 @@
+:root {
+  --sgt-fundo: #f3f5f7;
+  --sgt-texto: #16202a;
+  --sgt-texto-suave: #4b5563;
+  --sgt-borda: #dde2e8;
+  --sgt-azul: #2457a6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--sgt-fundo);
+  color: var(--sgt-texto);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+a {
+  color: var(--sgt-azul);
+}
+
+/* Coluna central: no celular ocupa a tela; no computador fica com largura de celular, como o protótipo. */
+.tela {
+  max-width: 460px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px 20px 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo > label,
+.campo > .rotulo {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dica {
+  font-size: 13px;
+  color: var(--sgt-texto-suave);
+}
+
+.ponto-cor {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  flex: none;
+}
+
+.largura-total {
+  width: 100%;
+}
