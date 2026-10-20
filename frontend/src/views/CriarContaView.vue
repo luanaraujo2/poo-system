@@ -18,7 +18,15 @@
 
       <div class="campo">
         <label for="email">E-mail</label>
-        <InputText id="email" v-model="email" type="email" autocomplete="email" size="large" />
+        <InputText
+          id="email"
+          v-model="email"
+          type="email"
+          autocomplete="email"
+          size="large"
+          @invalid="validarEmail"
+          @input="limparValidacaoEmail"
+        />
       </div>
 
       <div class="campo">
@@ -33,6 +41,18 @@
           fluid
         />
         <span class="dica">Mínimo de 8 caracteres.</span>
+      </div>
+      <div class="campo">
+        <label for="confirmar-senha">Confirmar senha</label>
+        <Password
+          v-model="senhaConfirmacao"
+          input-id="confirmar-senha"
+          :feedback="false"
+          toggle-mask
+          autocomplete="new-password"
+          size="large"
+          fluid
+        />
       </div>
     </form>
 
@@ -79,11 +99,35 @@ const toast = useToast()
 const nome = ref('')
 const email = ref('')
 const senha = ref('')
+const senhaConfirmacao = ref('')
 const erro = ref('')
 const enviando = ref(false)
 
+function validarEmail(event) {
+  const input = event.currentTarget
+  input.setCustomValidity(
+    input.validity.typeMismatch
+      ? 'O e-mail cadastrado deve ser válido e incluir "@" (ex.: nome@dominio.com).'
+      : '',
+  )
+}
+
+function limparValidacaoEmail(event) {
+  event.currentTarget.setCustomValidity('')
+}
+
 async function enviar() {
   erro.value = ''
+
+  if (!senhaConfirmacao.value) {
+    erro.value = 'Confirme sua senha.'
+    return
+  }
+  if (senha.value !== senhaConfirmacao.value) {
+    erro.value = 'As senhas não coincidem.'
+    return
+  }
+
   enviando.value = true
   try {
     await api('/usuarios', {
