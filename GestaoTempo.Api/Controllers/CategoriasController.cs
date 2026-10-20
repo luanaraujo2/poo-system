@@ -8,23 +8,22 @@ namespace GestaoTempo.Api.Controllers;
 
 [ApiController]
 [Route("api/categorias")]
-public class CategoriasController : ControllerBase
+public class CategoriasController : ControllerAutenticado
 {
     private readonly AppDbContext _db;
-    private readonly UsuarioAtual _usuarioAtual;
 
     public CategoriasController(AppDbContext db, UsuarioAtual usuarioAtual)
+        : base(usuarioAtual)
     {
         _db = db;
-        _usuarioAtual = usuarioAtual;
     }
 
     // Categorias do usuário, para preencher o campo "Categoria" da tela Nova tarefa.
     [HttpGet]
     public async Task<ActionResult<List<CategoriaResponse>>> Listar()
     {
-        if (_usuarioAtual.Id is not int usuarioId)
-            return Unauthorized(new ErroResponse("Usuário não identificado."));
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
 
         return await _db.Categorias
             .Where(c => c.UsuarioId == usuarioId)

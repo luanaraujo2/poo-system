@@ -10,7 +10,7 @@ namespace GestaoTempo.Api.Controllers;
 
 [ApiController]
 [Route("api/usuarios")]
-public class UsuariosController : ControllerBase
+public class UsuariosController : ControllerAutenticado
 {
     public const int TamanhoMinimoSenha = 8;
 
@@ -19,12 +19,11 @@ public class UsuariosController : ControllerBase
     public const int TamanhoMaximoEmail = 150;
 
     private readonly AppDbContext _db;
-    private readonly UsuarioAtual _usuarioAtual;
 
     public UsuariosController(AppDbContext db, UsuarioAtual usuarioAtual)
+        : base(usuarioAtual)
     {
         _db = db;
-        _usuarioAtual = usuarioAtual;
     }
 
     // US01 - Cadastrar conta
@@ -77,8 +76,8 @@ public class UsuariosController : ControllerBase
     [HttpGet("eu")]
     public async Task<ActionResult<UsuarioResponse>> Eu()
     {
-        if (_usuarioAtual.Id is not int usuarioId)
-            return Unauthorized(new ErroResponse("Usuário não identificado."));
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
 
         // Leitura por projeção: não monta a entidade Usuario (o construtor dela cria categorias).
         var usuario = await _db.Usuarios
@@ -86,6 +85,6 @@ public class UsuariosController : ControllerBase
             .Select(u => new UsuarioResponse(u.Id, u.Nome, u.Email))
             .FirstOrDefaultAsync();
 
-        return usuario is null ? Unauthorized(new ErroResponse("Usuário não identificado.")) : usuario;
+        return usuario is null ? NaoIdentificado() : usuario;
     }
 }
