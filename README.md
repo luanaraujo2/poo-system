@@ -89,6 +89,26 @@ npm run dev
 
 O `npm install` só é preciso na primeira vez. Abra `http://localhost:5173` e entre com `teste@sgt.local` / `12345678` ou crie uma conta.
 
+### Rodar pelo VS Code, sem digitar comandos
+
+Pré-requisitos instalados e PostgreSQL ligado. Na primeira vez, rode `npm install` uma vez dentro da pasta `frontend` (ver acima); depois não precisa mais.
+
+API:
+
+1. Na barra lateral, abra `GestaoTempo.Api` e clique em `Program.cs` para deixá-lo aberto.
+2. No menu de cima, clique em **Executar > Executar sem Depuração**.
+3. Se perguntar o depurador, escolha **C#** e o perfil `C#: GestaoTempo.Api [http]`.
+4. Espere aparecer `Now listening on: http://localhost:5224` no painel de baixo.
+
+Front-end:
+
+1. Na barra lateral, abra a pasta `frontend` e clique em `package.json`.
+2. Passe o mouse em cima da palavra `dev`, na linha `"dev": "vite",` dentro de `"scripts"`.
+3. Na caixinha que aparece, clique em **Executar Script**. Se a caixinha não aparecer, clique em **Depurar**, escrito acima da linha `"scripts"`, e escolha `dev`.
+4. No terminal que abrir, segure **Ctrl** e clique em `http://localhost:5173/`.
+
+Para parar: o quadrado vermelho da barra de depuração encerra a API; a lixeira do terminal encerra o front-end.
+
 ### Testar a API
 
 Abra `GestaoTempo.Api/GestaoTempo.Api.http` no VS Code (extensão REST Client) e clique em **Send Request** acima de cada teste. O resultado esperado está no título de cada um: A a G cobrem cadastro, login e token (US01 e US02), 1 a 12 cobrem as tarefas (US03) e 13 a 16 cobrem as subtarefas. Os prazos são relativos à data de hoje.
