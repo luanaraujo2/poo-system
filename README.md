@@ -8,7 +8,7 @@ Projeto FullStack para um melhor aproveitamento do seu tempo.
 
 | US | História | Situação |
 |---|---|---|
-| US01 | Cadastrar conta (nome, e-mail, senha) | Pronta: API e tela "Criar conta" |
+| US01 | Cadastrar conta (nome, e-mail, senha e confirmação de senha) | Pronta: API e tela "Criar conta"; confirmação validada no front-end |
 | US02 | Entrar e sair do sistema | Pronta: login com token, tela "Entrar" e botão "Sair" |
 | US03 | Cadastrar tarefa | Pronta: API e tela "Nova tarefa" (regra do prazo ainda a combinar, ver [decisões](docs/decisoes.md)) |
 
