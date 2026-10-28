@@ -26,7 +26,7 @@ public class Usuario
         }
         else if (string.IsNullOrWhiteSpace(senhaHash) || senhaHash.Length < 6)
         {
-            throw new ArgumentException("A senha do usuário deve ter pelo menos 8 caracteres.");
+            throw new ArgumentException("A senha do usuário deve ter pelo menos 6 caracteres.");
         }
         CriarCategoriasPadrao();
     }

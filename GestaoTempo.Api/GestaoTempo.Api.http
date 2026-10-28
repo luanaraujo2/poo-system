@@ -2,6 +2,7 @@
 # Testes A a G (cadastro e login): o teste F usa o token do teste D.
 # Testes 1 a 16 (tarefas): o usuário vem do cabeçalho X-Usuario-Id (1 = teste@sgt.local), só em Development.
 # Os prazos são relativos a hoje. Rode os testes 2 e 7 antes do 12 ao 16, que usam os ids que eles devolvem.
+# Testes 17 a 26 (US04 - categorias) e 27 a 34 (US05 - editar e excluir): rode na ordem, um usa o id do outro.
 @usuario = 1
 
 ### A. US01 - Criar conta (esperado: 201)
@@ -24,7 +25,7 @@ Content-Type: application/json
   "senha": "12345678"
 }
 
-### C. US01 - Senha curta (esperado: 400 "A senha deve ter pelo menos 8 caracteres.")
+### C. US01 - Senha curta (esperado: 400 "A senha deve ter pelo menos 6 caracteres.")
 POST {{host}}/api/usuarios
 Content-Type: application/json
 
@@ -241,4 +242,177 @@ X-Usuario-Id: {{usuario}}
 
 ### 16. Ver a tarefa-pai depois do vínculo (esperado: 200, "subtarefasIds" com o id da subtarefa)
 GET {{host}}/api/tarefas/{{tarefaPai.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 17. US04 - Criar categoria própria (esperado: 201, "padrao": false)
+# @name categoriaNova
+POST {{host}}/api/categorias
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "nome": "Academia {{$randomInt 1000 9999}}",
+  "cor": "#7C3AED"
+}
+
+### 18. US04 - Nome repetido, com letras diferentes (esperado: 409 "Você já tem uma categoria com esse nome.")
+POST {{host}}/api/categorias
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "nome": "TRABALHO"
+}
+
+### 19. US04 - Nome curto (esperado: 400 "O nome da categoria deve ter pelo menos 3 caracteres.")
+POST {{host}}/api/categorias
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "nome": "Ab"
+}
+
+### 20. US04 - Cor fora do formato (esperado: 400 "A cor deve estar no formato #RRGGBB.")
+POST {{host}}/api/categorias
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "nome": "Cor errada",
+  "cor": "roxo"
+}
+
+### 21. US04 - Renomear a categoria do teste 17 (esperado: 200 com o nome novo)
+PUT {{host}}/api/categorias/{{categoriaNova.response.body.id}}
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "nome": "Academia e corrida {{$randomInt 1000 9999}}",
+  "cor": "#0E9F6E"
+}
+
+### 22. US04 - Renomear categoria padrão (esperado: 400 "As categorias padrão não podem ser alteradas.")
+PUT {{host}}/api/categorias/1
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "nome": "Serviço"
+}
+
+### 23. US04 - Tarefa na categoria do teste 17, para testar a exclusão (esperado: 201)
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Treino de pernas",
+  "prazo": "{{$datetime iso8601 2 d}}",
+  "estimativaMin": 60,
+  "categoriaId": {{categoriaNova.response.body.id}},
+  "criticidade": "Media",
+  "complexidade": "Baixa",
+  "prioridade": "Importante_NaoUrgente"
+}
+
+### 24. US04 - Excluir categoria com tarefa, sem dizer para onde ela vai (esperado: 409 "Esta categoria tem 1 tarefa(s)...")
+DELETE {{host}}/api/categorias/{{categoriaNova.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 25. US04 - Excluir categoria padrão (esperado: 400 "As categorias padrão não podem ser excluídas.")
+DELETE {{host}}/api/categorias/1
+X-Usuario-Id: {{usuario}}
+
+### 26. US04 - Excluir movendo as tarefas para "Pessoal" (id 3) (esperado: 204; a tarefa do teste 23 passa para Pessoal)
+DELETE {{host}}/api/categorias/{{categoriaNova.response.body.id}}?moverPara=3
+X-Usuario-Id: {{usuario}}
+
+### 27. US05 - Editar a tarefa do teste 2: título, categoria e estimativa (esperado: 200 com os dados novos)
+PUT {{host}}/api/tarefas/{{tarefaPai.response.body.id}}
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Estudar para a prova de POO (editada)",
+  "descricao": "Capítulos 3 e 4",
+  "prazo": "{{$datetime iso8601 10 d}}",
+  "estimativaMin": 120,
+  "categoriaId": 2,
+  "criticidade": "Alta",
+  "complexidade": "Alta",
+  "prioridade": "Urgente_Importante"
+}
+
+### 28. US05 - Estimativa menor que a soma das subtarefas (rode o 13 antes) (esperado: 400 "A estimativa não pode ficar menor que a soma das subtarefas.")
+PUT {{host}}/api/tarefas/{{tarefaPai.response.body.id}}
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Estudar para a prova de POO (editada)",
+  "prazo": "{{$datetime iso8601 10 d}}",
+  "estimativaMin": 10,
+  "categoriaId": 2,
+  "criticidade": "Alta",
+  "complexidade": "Alta",
+  "prioridade": "Urgente_Importante"
+}
+
+### 29. US05 - Mudar o prazo para o passado (esperado: 400 "O prazo da tarefa deve ser uma data futura.")
+PUT {{host}}/api/tarefas/{{tarefaPai.response.body.id}}
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Estudar para a prova de POO (editada)",
+  "prazo": "{{$datetime iso8601 -1 d}}",
+  "estimativaMin": 120,
+  "categoriaId": 2,
+  "criticidade": "Alta",
+  "complexidade": "Alta",
+  "prioridade": "Urgente_Importante"
+}
+
+### 30. US05 - Título curto na edição (esperado: 400 "O título da tarefa deve ter pelo menos 3 caracteres.")
+PUT {{host}}/api/tarefas/{{tarefaPai.response.body.id}}
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Ok",
+  "prazo": "{{$datetime iso8601 10 d}}",
+  "estimativaMin": 120,
+  "categoriaId": 2,
+  "criticidade": "Alta",
+  "complexidade": "Alta",
+  "prioridade": "Urgente_Importante"
+}
+
+### 31. US05 - Editar tarefa que não existe (esperado: 404 "Tarefa não encontrada.")
+PUT {{host}}/api/tarefas/999999
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Não existe",
+  "prazo": "{{$datetime iso8601 10 d}}",
+  "estimativaMin": 30,
+  "categoriaId": 2,
+  "criticidade": "Baixa",
+  "complexidade": "Baixa",
+  "prioridade": "NaoUrgente_NaoImportante"
+}
+
+### 32. US05 - Excluir a tarefa do teste 2 (esperado: 204; a subtarefa do teste 7 é excluída junto)
+DELETE {{host}}/api/tarefas/{{tarefaPai.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 33. US05 - A subtarefa do teste 7 também sumiu (esperado: 404)
+GET {{host}}/api/tarefas/{{tarefaFilha.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 34. US05 - Excluir de novo (esperado: 404 "Tarefa não encontrada.")
+DELETE {{host}}/api/tarefas/{{tarefaPai.response.body.id}}
 X-Usuario-Id: {{usuario}}

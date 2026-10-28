@@ -43,6 +43,44 @@ public class Tarefa
         CriadoEm = DateTime.Now;
     }
 
+    // Usado só pelo banco (EF Core) ao ler uma tarefa já gravada.
+    // Sem ele, o EF chama o construtor acima, que recusa prazo vencido.
+#pragma warning disable CS8618
+    private Tarefa() { }
+#pragma warning restore CS8618
+
+    // US05 - Editar tarefa. O prazo só é conferido se mudou: uma tarefa atrasada
+    // pode ter o título corrigido sem precisar mudar o prazo.
+    public void Editar(string titulo, string descricao, DateTime prazo, int estimativaMin, Criticidade criticidade, Complexidade complexidade, Prioridade prioridade)
+    {
+        if (string.IsNullOrWhiteSpace(titulo) || titulo.Length < 3)
+            throw new ArgumentException("O título da tarefa deve ter pelo menos 3 caracteres.");
+        if (estimativaMin <= 0)
+            throw new ArgumentException("A estimativa de tempo deve ser maior que zero.");
+        bool prazoMudou = prazo.ToUniversalTime() != Prazo.ToUniversalTime();
+        if (prazoMudou && prazo < DateTime.Now)
+            throw new ArgumentException("O prazo da tarefa deve ser uma data futura.");
+        if (estimativaMin < SomarEstimativasSubtarefas())
+            throw new InvalidOperationException("A estimativa não pode ficar menor que a soma das subtarefas.");
+
+        Titulo = titulo;
+        Descricao = descricao;
+        if (prazoMudou)
+            Prazo = prazo;
+        EstimativaMin = estimativaMin;
+        Criticidade = criticidade;
+        Complexidade = complexidade;
+        Prioridade = prioridade;
+    }
+
+    // US04 - usada ao editar a tarefa e ao excluir uma categoria (as tarefas vão para outra).
+    public void TrocarCategoria(int categoriaId)
+    {
+        if (categoriaId <= 0)
+            throw new ArgumentException("Categoria inválida.");
+        CategoriaId = categoriaId;
+    }
+
     public void AlterarStatus(StatusTarefa status)
     {
         if (Status == StatusTarefa.Concluida)

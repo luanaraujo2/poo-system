@@ -1,13 +1,21 @@
-<!-- Minhas tarefas: cada usuário vê só as próprias (US02). Daqui sai para "Nova tarefa" (US03) e para "Sair". -->
+<!-- Minhas tarefas: cada usuário vê só as próprias (US02). Daqui sai para "Nova tarefa" (US03),
+     para editar uma tarefa tocando no cartão (US05), para "Categorias" (US04) e para "Sair". -->
 <template>
   <main class="tela">
     <header class="topo">
-      <div>
-        <span class="ola">Olá, {{ primeiroNome }}</span>
-        <h1>Minhas tarefas</h1>
+      <span class="ola">Olá, {{ primeiroNome }}</span>
+      <div class="botoes-topo">
+        <Button
+          label="Categorias"
+          icon="pi pi-tags"
+          severity="secondary"
+          text
+          @click="router.push({ name: 'categorias' })"
+        />
+        <Button label="Sair" icon="pi pi-sign-out" severity="secondary" text @click="sairDaConta" />
       </div>
-      <Button label="Sair" icon="pi pi-sign-out" severity="secondary" text @click="sairDaConta" />
     </header>
+    <h1>Minhas tarefas</h1>
 
     <Message v-if="erro" severity="error" :closable="false">{{ erro }}</Message>
 
@@ -22,24 +30,29 @@
     </section>
 
     <ul v-else class="lista">
-      <li v-for="tarefa in tarefas" :key="tarefa.id" class="cartao">
-        <div class="linha-titulo">
-          <span class="titulo">{{ tarefa.titulo }}</span>
-          <Tag :value="STATUS[tarefa.status] ?? tarefa.status" severity="secondary" />
-        </div>
-        <p v-if="tarefa.descricao" class="descricao">{{ tarefa.descricao }}</p>
-        <div class="detalhes">
-          <span class="detalhe">
-            <span class="ponto-cor" :style="{ background: corDaCategoria(tarefa.categoriaId) }" />
-            {{ tarefa.categoria }}
-          </span>
-          <span class="detalhe"><i class="pi pi-calendar" /> {{ formatarPrazo(tarefa.prazo) }}</span>
-          <span class="detalhe"><i class="pi pi-clock" /> {{ formatarDuracao(tarefa.estimativaMin) }}</span>
-        </div>
-        <div class="etiquetas">
-          <Tag :value="textoDe(PRIORIDADES, tarefa.prioridade)" :severity="corDaPrioridade(tarefa.prioridade)" />
-          <Tag :value="`Criticidade ${textoDe(CRITICIDADES, tarefa.criticidade).toLowerCase()}`" severity="secondary" />
-        </div>
+      <li v-for="tarefa in tarefas" :key="tarefa.id">
+        <RouterLink
+          :to="{ name: 'editar-tarefa', params: { id: tarefa.id } }"
+          class="cartao"
+        >
+          <div class="linha-titulo">
+            <span class="titulo">{{ tarefa.titulo }}</span>
+            <Tag :value="STATUS[tarefa.status] ?? tarefa.status" severity="secondary" />
+          </div>
+          <p v-if="tarefa.descricao" class="descricao">{{ tarefa.descricao }}</p>
+          <div class="detalhes">
+            <span class="detalhe">
+              <span class="ponto-cor" :style="{ background: corDaCategoria(tarefa.categoriaId) }" />
+              {{ tarefa.categoria }}
+            </span>
+            <span class="detalhe"><i class="pi pi-calendar" /> {{ formatarPrazo(tarefa.prazo) }}</span>
+            <span class="detalhe"><i class="pi pi-clock" /> {{ formatarDuracao(tarefa.estimativaMin) }}</span>
+          </div>
+          <div class="etiquetas">
+            <Tag :value="textoDe(PRIORIDADES, tarefa.prioridade)" :severity="corDaPrioridade(tarefa.prioridade)" />
+            <Tag :value="`Criticidade ${textoDe(CRITICIDADES, tarefa.criticidade).toLowerCase()}`" severity="secondary" />
+          </div>
+        </RouterLink>
       </li>
     </ul>
 
@@ -108,10 +121,9 @@ onMounted(async () => {
 <style scoped>
 .topo {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
 }
 
 .ola {
@@ -120,7 +132,7 @@ onMounted(async () => {
 }
 
 h1 {
-  margin: 2px 0 0;
+  margin: 0 0 20px;
   font-size: 26px;
 }
 
@@ -168,6 +180,23 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.cartao:hover {
+  border-color: #b8c2cd;
+}
+
+.cartao:focus-visible {
+  outline: 2px solid var(--sgt-azul);
+  outline-offset: 2px;
+}
+
+.botoes-topo {
+  display: flex;
+  gap: 2px;
+  margin-right: -10px;
 }
 
 .linha-titulo {

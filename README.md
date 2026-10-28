@@ -12,11 +12,20 @@ Projeto FullStack para um melhor aproveitamento do seu tempo.
 | US02 | Entrar e sair do sistema | Pronta: login com token, tela "Entrar" e botão "Sair" |
 | US03 | Cadastrar tarefa | Pronta: API e tela "Nova tarefa" (regra do prazo ainda a combinar, ver [decisões](docs/decisoes.md)) |
 
+## Escopo da Sprint 4
+
+| US | História | Situação |
+|---|---|---|
+| US04 | Classificar por categoria | Pronta: criar, renomear e excluir categorias próprias (API e tela "Categorias") |
+| US05 | Editar e excluir tarefa | Pronta: tocar no cartão abre "Editar tarefa"; excluir pede confirmação |
+| US06 | Dividir tarefa em subtarefas | Ainda não está no repositório |
+| US07 | Atualizar status | Ainda não está no repositório |
+
 ## Documentação
 
 | Arquivo | Conteúdo |
 |---|---|
-| [docs/historias.md](docs/historias.md) | Critérios de aceite das US01, US02 e US03 e quem fez cada parte |
+| [docs/historias.md](docs/historias.md) | Critérios de aceite das US01 a US05 e quem fez cada parte |
 | [docs/api.md](docs/api.md) | Endpoints, exemplos de requisição e resposta, regras e erros |
 | [docs/banco.md](docs/banco.md) | Tabelas, decisões do banco e migrations |
 | [docs/banco.sql](docs/banco.sql) | Script SQL do esquema, para entrega e consulta |
@@ -46,7 +55,7 @@ GestaoTempo.Api/               API web
   Services/                    UsuarioAtual, GeradorDeToken
   GestaoTempo.Api.http         testes manuais (extensão REST Client)
 frontend/                      telas em Vue + PrimeVue
-  src/views/                   EntrarView, CriarContaView, TarefasView, NovaTarefaView
+  src/views/                   EntrarView, CriarContaView, TarefasView, NovaTarefaView, CategoriasView
   src/servicos/                api.js (chamadas à API) e sessao.js (token do login)
 docs/                          documentação e script SQL
 docker-compose.yml             PostgreSQL local (opcional)
@@ -91,7 +100,7 @@ O `npm install` só é preciso na primeira vez. Abra `http://localhost:5173` e e
 
 ### Testar a API
 
-Abra `GestaoTempo.Api/GestaoTempo.Api.http` no VS Code (extensão REST Client) e clique em **Send Request** acima de cada teste. O resultado esperado está no título de cada um: A a G cobrem cadastro, login e token (US01 e US02), 1 a 12 cobrem as tarefas (US03) e 13 a 16 cobrem as subtarefas. Os prazos são relativos à data de hoje.
+Abra `GestaoTempo.Api/GestaoTempo.Api.http` no VS Code (extensão REST Client) e clique em **Send Request** acima de cada teste. O resultado esperado está no título de cada um: A a G cobrem cadastro, login e token (US01 e US02), 1 a 12 cobrem as tarefas (US03), 13 a 16 cobrem as subtarefas, 17 a 26 cobrem as categorias (US04) e 27 a 34 cobrem editar e excluir tarefa (US05). Os prazos são relativos à data de hoje.
 
 Algo não funcionou? Veja [docs/problemas.md](docs/problemas.md).
 
