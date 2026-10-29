@@ -1,4 +1,6 @@
-# Histórias da Sprint 3
+# Histórias
+
+Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07 (aqui estão a US04 e a US05).
 
 ## Quem fez o quê
 
@@ -13,7 +15,7 @@ O endpoint de subtarefas (`POST /api/tarefas/{idPai}/subtarefas/{idFilha}`) e a 
 
 | Critério | Situação |
 |---|---|
-| Nome, e-mail e senha | Pronto. Nome com 3 ou mais letras e e-mail com @ (regras da classe `Usuario`); senha com 8 ou mais caracteres |
+| Nome, e-mail e senha | Pronto. Nome com 3 ou mais letras e e-mail com @ (regras da classe `Usuario`); senha com 6 ou mais caracteres (eram 8 na Sprint 3) |
 | Não aceita e-mail repetido | Pronto. 409 "Este e-mail já está cadastrado.", sem diferenciar maiúsculas (índice único `IX_usuario_email`) |
 | Senha salva com hash | Pronto (BCrypt) |
 | Conta começa com as 5 categorias | Pronto. O construtor de `Usuario` cria as categorias e elas são salvas junto |
@@ -47,3 +49,23 @@ Não há tabela de sessão: "sair" é só o front apagar o token. Se o token ven
 | Tela "Nova tarefa" | Pronto. Depois de salvar, volta para "Minhas tarefas" |
 
 As regras de validação estão em [api.md](api.md#regras-de-validação).
+
+## US04 - Classificar por categoria (Sprint 4)
+
+Feita por João Vitor: endpoints, tela "Categorias" e os métodos novos no Domain (`Categoria.AlterarCor`, `Tarefa.TrocarCategoria`).
+
+| Critério | Situação |
+|---|---|
+| Cinco categorias padrão criadas no cadastro da conta | Pronto desde a US01 |
+| Criar, renomear e excluir categorias próprias | Pronto. `POST`, `PUT` e `DELETE /api/categorias`; nome sem repetir e cor `#RRGGBB`. As padrão ficam travadas |
+| Categoria com tarefas não é excluída sem realocação | Pronto. Responde 409 até receber `?moverPara=`; a tela pede para escolher a categoria de destino |
+
+## US05 - Editar e excluir tarefa (Sprint 4)
+
+Feita por João Vitor: endpoints, modo edição da tela de tarefa e os métodos novos no Domain (`Tarefa.Editar` e o construtor vazio para o EF).
+
+| Critério | Situação |
+|---|---|
+| Editar a tarefa | Pronto. `PUT /api/tarefas/{id}`, com as mesmas regras do cadastro; tarefa atrasada pode ser editada sem mudar o prazo |
+| Exclusão pede confirmação | Pronto. A tela abre uma confirmação; se houver subtarefas, avisa que elas vão junto |
+| Mudanças registradas no histórico | Fica para a US12, como combinado no planejamento da Sprint 4 |

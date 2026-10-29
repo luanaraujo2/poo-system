@@ -1,6 +1,7 @@
 <template>
   <Toast position="top-center" />
-  <RouterView />
+  <!-- A chave faz a tela recarregar ao trocar entre "Nova tarefa" e "Editar tarefa", que usam o mesmo componente. -->
+  <RouterView :key="$route.fullPath" />
 </template>
 
 <script setup>

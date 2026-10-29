@@ -40,7 +40,7 @@
           size="large"
           fluid
         />
-        <span class="dica">Mínimo de 8 caracteres.</span>
+        <span class="dica">Mínimo de 6 caracteres.</span>
       </div>
       <div class="campo">
         <label for="confirmar-senha">Confirmar senha</label>

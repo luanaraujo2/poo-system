@@ -8,8 +8,10 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 |---|---|---|---|
 | Entrar | `/entrar` | US02 | `views/EntrarView.vue` |
 | Criar conta | `/criar-conta` | US01 | `views/CriarContaView.vue` |
-| Minhas tarefas (lista e botão Sair) | `/tarefas` | US02 e US03 | `views/TarefasView.vue` |
+| Minhas tarefas (lista, Categorias e Sair) | `/tarefas` | US02, US03 e US05 | `views/TarefasView.vue` |
 | Nova tarefa | `/tarefas/nova` | US03 | `views/NovaTarefaView.vue` |
+| Editar tarefa (com Excluir) | `/tarefas/{id}` | US05 | `views/NovaTarefaView.vue`, em modo edição |
+| Categorias | `/categorias` | US04 | `views/CategoriasView.vue` |
 
 `/` e qualquer rota desconhecida levam para `/tarefas`. As telas de tarefas exigem login; quem já está logado e abre `/entrar` ou `/criar-conta` é levado para `/tarefas`.
 
@@ -38,6 +40,19 @@ Os erros de regra voltam da API como `{ "mensagem": "..." }` e a tela mostra ess
 - **Tempo estimado**: horas e minutos, com atalhos de 15min, 30min, 1h, 2h e 4h.
 - **Categoria**: carregada de `GET /api/categorias`.
 - O navegador confere o que dá para conferir; as regras da classe `Tarefa` quem responde é a API.
+
+## Tela "Editar tarefa" (US05)
+
+- Abre ao tocar num cartão de "Minhas tarefas". É a mesma tela do cadastro, já preenchida.
+- Se o dia e a hora do prazo não forem mexidos, a tela manda o prazo gravado de volta. Assim uma tarefa atrasada pode ser editada sem trocar o prazo.
+- **Excluir tarefa** abre uma confirmação. Se a tarefa tiver subtarefas, a confirmação avisa que elas também serão excluídas.
+
+## Tela "Categorias" (US04)
+
+- Abre pelo botão **Categorias** no topo de "Minhas tarefas".
+- Mostra as categorias próprias (com lápis para renomear e lixeira para excluir) e as 5 padrão, que ficam travadas.
+- **Nova categoria**: nome e uma de 8 cores.
+- Excluir uma categoria com tarefas pede para escolher para qual categoria elas vão.
 
 ## Comandos
 

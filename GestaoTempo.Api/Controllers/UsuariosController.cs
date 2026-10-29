@@ -12,7 +12,7 @@ namespace GestaoTempo.Api.Controllers;
 [Route("api/usuarios")]
 public class UsuariosController : ControllerAutenticado
 {
-    public const int TamanhoMinimoSenha = 8;
+    public const int TamanhoMinimoSenha = 6;
 
     // Limites das colunas nome e email (AppDbContext).
     public const int TamanhoMaximoNome = 100;

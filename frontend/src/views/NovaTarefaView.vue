@@ -1,16 +1,23 @@
-<!-- US03 - Cadastrar tarefa -->
+<!-- US03 - Cadastrar tarefa / US05 - Editar e excluir tarefa (a mesma tela, em modo edição quando a rota traz o id) -->
 <template>
   <main class="tela">
     <header class="topo">
       <RouterLink :to="{ name: 'tarefas' }" class="fechar" aria-label="Fechar">
         <i class="pi pi-times" />
       </RouterLink>
-      <h1>Nova tarefa</h1>
+      <h1>{{ modoEdicao ? 'Editar tarefa' : 'Nova tarefa' }}</h1>
       <span class="espaco" />
     </header>
 
-    <form id="form-tarefa" class="formulario" @submit.prevent="salvar">
+    <div v-if="carregandoTarefa" class="carregando">
+      <ProgressSpinner style="width: 40px; height: 40px" stroke-width="4" />
+    </div>
+
+    <form v-show="!carregandoTarefa" id="form-tarefa" class="formulario" @submit.prevent="salvar">
       <Message v-if="erro" severity="error" :closable="false">{{ erro }}</Message>
+      <Message v-if="avisoAtrasada" severity="warn" :closable="false">
+        Esta tarefa está atrasada. Dá para salvar sem mudar o prazo; se mudar, o novo prazo não pode ter passado.
+      </Message>
 
       <div class="campo">
         <label for="titulo">Título *</label>
@@ -57,7 +64,7 @@
         <div class="prazo-hora">
           <div class="campo">
             <label for="prazo" class="rotulo-pequeno">Dia</label>
-            <InputText id="prazo" v-model="prazo" type="date" :min="hojeTexto" />
+            <InputText id="prazo" v-model="prazo" type="date" :min="dataMinima" />
           </div>
           <div class="campo">
             <label for="hora" class="rotulo-pequeno">Hora (opcional)</label>
@@ -133,11 +140,40 @@
       </div>
     </form>
 
-    <div class="acoes">
+    <div v-show="!carregandoTarefa" class="acoes">
       <Button label="Cancelar" severity="secondary" outlined size="large" @click="router.push({ name: 'tarefas' })" />
       <Button type="submit" form="form-tarefa" label="Salvar" size="large" :loading="salvando" />
     </div>
-    <span class="dica rodape">* campos obrigatórios. A tarefa começa como Pendente.</span>
+    <span v-if="!modoEdicao" class="dica rodape">* campos obrigatórios. A tarefa começa como Pendente.</span>
+    <Button
+      v-if="modoEdicao && !carregandoTarefa && tarefaOriginal"
+      label="Excluir tarefa"
+      icon="pi pi-trash"
+      severity="danger"
+      text
+      class="excluir"
+      @click="confirmandoExclusao = true"
+    />
+
+    <!-- US05: a exclusão sempre pede confirmação. -->
+    <Dialog
+      v-model:visible="confirmandoExclusao"
+      modal
+      header="Excluir tarefa?"
+      :style="{ width: 'min(92vw, 400px)' }"
+      :draggable="false"
+    >
+      <p class="texto-dialogo">
+        <strong>{{ tarefaOriginal?.titulo }}</strong> será excluída. Isso não pode ser desfeito.
+      </p>
+      <p v-if="quantidadeSubtarefas" class="texto-dialogo">
+        {{ quantidadeSubtarefas === 1 ? 'A subtarefa dela também será excluída.' : `As ${quantidadeSubtarefas} subtarefas dela também serão excluídas.` }}
+      </p>
+      <template #footer>
+        <Button label="Cancelar" severity="secondary" outlined @click="confirmandoExclusao = false" />
+        <Button label="Excluir" severity="danger" :loading="excluindo" @click="excluir" />
+      </template>
+    </Dialog>
   </main>
 </template>
 
@@ -145,15 +181,21 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
 import SelectButton from 'primevue/selectbutton'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 
 import { api } from '../servicos/api'
 import { COMPLEXIDADES, CRITICIDADES, PRIORIDADES, formatarDuracao } from '../constantes'
+
+// id vem da rota /tarefas/:id; sem id, a tela é o cadastro.
+const props = defineProps({ id: { type: String, default: null } })
+const modoEdicao = computed(() => props.id !== null)
 
 const router = useRouter()
 const toast = useToast()
@@ -164,6 +206,11 @@ function dataTexto(data) {
   const mes = String(data.getMonth() + 1).padStart(2, '0')
   const dia = String(data.getDate()).padStart(2, '0')
   return `${ano}-${mes}-${dia}`
+}
+
+// Hora no formato do campo de hora (hh:mm), no horário local.
+function horaTexto(data) {
+  return `${String(data.getHours()).padStart(2, '0')}:${String(data.getMinutes()).padStart(2, '0')}`
 }
 
 function daquiA(dias) {
@@ -199,6 +246,25 @@ const prioridade = ref(null)
 const erro = ref('')
 const salvando = ref(false)
 
+// Modo edição (US05)
+const tarefaOriginal = ref(null)
+const carregandoTarefa = ref(false)
+const prazoOriginal = ref({ dia: '', hora: '' })
+const confirmandoExclusao = ref(false)
+const excluindo = ref(false)
+
+const prazoMudou = computed(
+  () => !modoEdicao.value || prazo.value !== prazoOriginal.value.dia || hora.value !== prazoOriginal.value.hora,
+)
+const quantidadeSubtarefas = computed(() => tarefaOriginal.value?.subtarefasIds?.length ?? 0)
+const avisoAtrasada = computed(
+  () => modoEdicao.value && tarefaOriginal.value && new Date(tarefaOriginal.value.prazo) < new Date(),
+)
+// Uma tarefa atrasada continua mostrando o dia original no campo de data.
+const dataMinima = computed(() =>
+  modoEdicao.value && prazoOriginal.value.dia && prazoOriginal.value.dia < hojeTexto ? prazoOriginal.value.dia : hojeTexto,
+)
+
 const totalMinutos = computed(() => (horas.value ?? 0) * 60 + (minutos.value ?? 0))
 
 function definirTempo(total) {
@@ -207,14 +273,38 @@ function definirTempo(total) {
 }
 
 onMounted(async () => {
+  if (modoEdicao.value) carregandoTarefa.value = true
   try {
-    categorias.value = await api('/categorias')
+    const [listaCategorias, tarefa] = await Promise.all([
+      api('/categorias'),
+      modoEdicao.value ? api(`/tarefas/${props.id}`) : null,
+    ])
+    categorias.value = listaCategorias
+    if (tarefa) preencher(tarefa)
   } catch (e) {
-    erro.value = e.message
+    erro.value = e.status === 404 ? 'Tarefa não encontrada.' : e.message
   } finally {
     carregandoCategorias.value = false
+    carregandoTarefa.value = false
   }
 })
+
+// Coloca os dados da tarefa nos campos (modo edição).
+function preencher(tarefa) {
+  tarefaOriginal.value = tarefa
+  const dataPrazo = new Date(tarefa.prazo)
+  prazoOriginal.value = { dia: dataTexto(dataPrazo), hora: horaTexto(dataPrazo) }
+
+  titulo.value = tarefa.titulo
+  descricao.value = tarefa.descricao ?? ''
+  categoriaId.value = tarefa.categoriaId
+  prazo.value = prazoOriginal.value.dia
+  hora.value = prazoOriginal.value.hora
+  definirTempo(tarefa.estimativaMin)
+  criticidade.value = tarefa.criticidade
+  complexidade.value = tarefa.complexidade
+  prioridade.value = tarefa.prioridade
+}
 
 // Campo de hora: aceita só números e coloca os dois-pontos sozinho (1800 vira 18:00).
 function formatarHora(evento) {
@@ -230,8 +320,10 @@ function horaValida(texto) {
 }
 
 // Junta o dia com a hora (ou 23:59, se a hora ficar em branco), no horário local.
-function prazoCompleto() {
-  return new Date(`${prazo.value}T${hora.value || '23:59'}:00`)
+// Na edição, se o dia e a hora não mudaram, devolve o prazo gravado sem mexer nos segundos.
+function prazoParaEnviar() {
+  if (!prazoMudou.value) return tarefaOriginal.value.prazo
+  return new Date(`${prazo.value}T${hora.value || '23:59'}:00`).toISOString()
 }
 
 // Confere no navegador o que dá para conferir; o resto (regras da classe Tarefa) a API responde.
@@ -239,7 +331,7 @@ function conferir() {
   if (!titulo.value.trim()) return 'O título é obrigatório.'
   if (!categoriaId.value) return 'Escolha uma categoria.'
   if (!prazo.value) return 'O prazo é obrigatório.'
-  if (prazo.value < hojeTexto) return 'O prazo não pode ser uma data que já passou.'
+  if (prazoMudou.value && prazo.value < hojeTexto) return 'O prazo não pode ser uma data que já passou.'
   if (hora.value && !horaValida(hora.value)) return 'Hora inválida. Digite só os números, ex.: 1800 para 18:00.'
   if (totalMinutos.value <= 0) return 'O tempo estimado é obrigatório.'
   if (!criticidade.value) return 'Informe a criticidade.'
@@ -257,12 +349,12 @@ async function salvar() {
 
   salvando.value = true
   try {
-    const tarefa = await api('/tarefas', {
-      metodo: 'POST',
+    const tarefa = await api(modoEdicao.value ? `/tarefas/${props.id}` : '/tarefas', {
+      metodo: modoEdicao.value ? 'PUT' : 'POST',
       corpo: {
         titulo: titulo.value.trim(),
         descricao: descricao.value.trim() || null,
-        prazo: prazoCompleto().toISOString(),
+        prazo: prazoParaEnviar(),
         estimativaMin: totalMinutos.value,
         categoriaId: categoriaId.value,
         criticidade: criticidade.value,
@@ -270,13 +362,29 @@ async function salvar() {
         prioridade: prioridade.value,
       },
     })
-    toast.add({ severity: 'success', summary: 'Tarefa cadastrada', detail: tarefa.titulo, life: 3000 })
+    const resumo = modoEdicao.value ? 'Tarefa atualizada' : 'Tarefa cadastrada'
+    toast.add({ severity: 'success', summary: resumo, detail: tarefa.titulo, life: 3000 })
     router.push({ name: 'tarefas' })
   } catch (e) {
     erro.value = e.message
     window.scrollTo({ top: 0, behavior: 'smooth' })
   } finally {
     salvando.value = false
+  }
+}
+
+async function excluir() {
+  excluindo.value = true
+  try {
+    await api(`/tarefas/${props.id}`, { metodo: 'DELETE' })
+    toast.add({ severity: 'success', summary: 'Tarefa excluída', detail: tarefaOriginal.value.titulo, life: 3000 })
+    router.push({ name: 'tarefas' })
+  } catch (e) {
+    confirmandoExclusao.value = false
+    erro.value = e.message
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  } finally {
+    excluindo.value = false
   }
 }
 </script>
@@ -445,5 +553,21 @@ h1 {
 .rodape {
   margin-top: 12px;
   text-align: center;
+}
+
+.carregando {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.excluir {
+  margin-top: 16px;
+  align-self: center;
+}
+
+.texto-dialogo {
+  margin: 0 0 10px;
+  line-height: 1.45;
 }
 </style>

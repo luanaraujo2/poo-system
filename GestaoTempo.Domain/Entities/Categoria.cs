@@ -19,6 +19,17 @@ public class Categoria
         Padrao = padrao;
     }
 
+    // US04 - cor no formato #RRGGBB, a mesma usada nas categorias padrão.
+    public void AlterarCor(string cor)
+    {
+        if (!CorValida(cor))
+            throw new ArgumentException("A cor deve estar no formato #RRGGBB.");
+        Cor = cor;
+    }
+
+    public static bool CorValida(string? cor) =>
+        cor is not null && System.Text.RegularExpressions.Regex.IsMatch(cor, "^#[0-9A-Fa-f]{6}$");
+
     public void Renomear(string nome)
     {
         if (string.IsNullOrWhiteSpace(nome) || nome.Length < 3)
