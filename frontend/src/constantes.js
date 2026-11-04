@@ -26,6 +26,14 @@ export const STATUS = {
   Cancelada: 'Cancelada',
 }
 
+// US07: opções do campo Status, na ordem em que aparecem.
+export const STATUS_OPCOES = Object.entries(STATUS).map(([valor, texto]) => ({ valor, texto }))
+
+// Cor da etiqueta de status (severity do Tag do PrimeVue).
+export function corDoStatus(status) {
+  return { Pendente: 'secondary', EmAndamento: 'info', Concluida: 'success', Cancelada: 'contrast' }[status]
+}
+
 export function textoDe(lista, valor) {
   return lista.find((item) => item.valor === valor)?.texto ?? valor
 }

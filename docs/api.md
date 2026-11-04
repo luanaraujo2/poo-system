@@ -16,7 +16,8 @@ Base: `http://localhost:5224`. Tudo em JSON, com campos em camelCase. Enums traf
 | GET | `/api/tarefas/{id}` | Obtém uma tarefa do usuário | 200, 401, 404 |
 | PUT | `/api/tarefas/{id}` | Edita a tarefa (US05) | 200, 400, 401, 404 |
 | DELETE | `/api/tarefas/{id}` | Exclui a tarefa e as subtarefas dela (US05) | 204, 401, 404 |
-| POST | `/api/tarefas/{idPai}/subtarefas/{idFilha}` | Vincula uma subtarefa (do Luan, fora das três histórias) | 204, 400, 401, 404 |
+| PATCH | `/api/tarefas/{id}/status` | Muda o status; para concluir, informa o tempo real (US07) | 200, 400, 401, 404 |
+| POST | `/api/tarefas/{idPai}/subtarefas/{idFilha}` | Vincula uma tarefa já cadastrada como subtarefa (US06) | 204, 400, 401, 404 |
 
 Com exceção de criar conta e entrar, todas as rotas pedem `Authorization: Bearer <token>`. Só em Development, os testes do `.http` aceitam o cabeçalho `X-Usuario-Id: 1` no lugar do token.
 
@@ -114,13 +115,42 @@ Resposta 201 (a mesma forma vale para `GET /api/tarefas` e `GET /api/tarefas/{id
   "prioridade": "Urgente_Importante",
   "status": "Pendente",
   "criadoEm": "2026-10-20T14:00:00Z",
-  "subtarefasIds": []
+  "subtarefasIds": [],
+  "tarefaPaiId": null,
+  "concluidoEm": null,
+  "tempoRealMin": 0,
+  "subtarefasMin": 0,
+  "subtarefasConcluidas": 0
 }
 ```
 
+| Campo | O que é |
+|---|---|
+| `subtarefasIds` | Ids das subtarefas diretas |
+| `tarefaPaiId` | Id da tarefa principal, se for subtarefa (US06) |
+| `subtarefasMin` | Soma das estimativas das subtarefas (US06) |
+| `subtarefasConcluidas` | Quantas subtarefas estão concluídas (US06) |
+| `concluidoEm` e `tempoRealMin` | Data e hora da conclusão e tempo real gasto, gravados ao concluir (US07) |
+
+## Subtarefas (US06)
+
+Para criar uma tarefa já como subtarefa, mande `"tarefaPaiId": 1` no `POST /api/tarefas`, junto com os outros campos. A soma das estimativas das subtarefas não pode passar da estimativa da tarefa principal, e uma tarefa concluída não recebe subtarefas novas.
+
+`POST /api/tarefas/{idPai}/subtarefas/{idFilha}` vincula uma tarefa que já existe, com as mesmas regras.
+
+## Atualizar status (US07)
+
+`PATCH /api/tarefas/{id}/status`
+
+```json
+{ "status": "Concluida", "tempoRealMin": 75 }
+```
+
+`tempoRealMin` só é pedido para concluir. A resposta é a tarefa atualizada, com `concluidoEm` e `tempoRealMin` preenchidos.
+
 ## Editar e excluir tarefa (US05)
 
-`PUT /api/tarefas/{id}` recebe os mesmos campos do cadastro e devolve a tarefa atualizada. O status não muda aqui (fica para a US07).
+`PUT /api/tarefas/{id}` recebe os mesmos campos do cadastro e devolve a tarefa atualizada. O status não muda aqui (é pelo `PATCH .../status`, da US07), e `tarefaPaiId` é ignorado.
 
 `DELETE /api/tarefas/{id}` responde 204. As subtarefas dela, e as subtarefas dessas, são excluídas junto. A tela pede confirmação antes de chamar.
 
@@ -155,6 +185,17 @@ As regras de nome, e-mail, título, tempo estimado e prazo ficam nos construtore
 - Mesmas regras do cadastro para título, tempo estimado, categoria e enums.
 - O prazo só é conferido se mudar. Uma tarefa atrasada pode ser editada sem mudar o prazo; se mudar, o novo prazo precisa ser futuro.
 - O tempo estimado não pode ficar menor que a soma das subtarefas.
+
+**Subtarefas (US06)**
+- A tarefa principal precisa existir e ser do usuário.
+- A soma das estimativas das subtarefas não passa da estimativa da tarefa principal.
+- Tarefa concluída não recebe subtarefas novas.
+
+**Status (US07)**
+- Valores: `Pendente`, `EmAndamento`, `Concluida` e `Cancelada`.
+- Para concluir, o tempo real gasto é obrigatório e maior que zero. A data e a hora da conclusão são gravadas sozinhas.
+- A tarefa principal só é concluída quando todas as subtarefas estão concluídas.
+- Tarefa concluída não muda mais de status (regra da classe `Tarefa`).
 - O registro das mudanças no histórico fica para a US12.
 
 **Categoria (US04)**

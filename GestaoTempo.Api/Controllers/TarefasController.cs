@@ -39,6 +39,18 @@ public class TarefasController : ControllerAutenticado
 
         var prazo = PrazoLocal(req.Prazo!.Value);
 
+        // US06: se vier TarefaPaiId, a tarefa nasce como subtarefa dela.
+        // As subtarefas que a tarefa-pai já tem vêm junto, para a soma das estimativas ficar certa.
+        Tarefa? pai = null;
+        if (req.TarefaPaiId is int paiId)
+        {
+            pai = await _db.Tarefas
+                .Include(t => t.Subtarefas)
+                .FirstOrDefaultAsync(t => t.Id == paiId && t.UsuarioId == usuarioId);
+            if (pai is null)
+                return BadRequest(new ErroResponse("Tarefa principal não encontrada."));
+        }
+
         Tarefa tarefa;
         try
         {
@@ -57,6 +69,19 @@ public class TarefasController : ControllerAutenticado
         {
             // Regras da classe Tarefa: título, tempo estimado e prazo.
             return BadRequest(new ErroResponse(ex.Message));
+        }
+
+        if (pai is not null)
+        {
+            try
+            {
+                pai.AdicionarSubtarefa(tarefa);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Ex.: as subtarefas passariam da estimativa da tarefa-pai, ou ela já está concluída.
+                return BadRequest(new ErroResponse(ex.Message));
+            }
         }
 
         _db.Tarefas.Add(tarefa);
@@ -146,6 +171,39 @@ public class TarefasController : ControllerAutenticado
         return NoContent();
     }
 
+    // US07 - Atualizar status. Para concluir, informe o tempo real gasto (em minutos).
+    // A tarefa só é concluída se todas as subtarefas estiverem concluídas (US06).
+    [HttpPatch("{id:int}/status")]
+    public async Task<ActionResult<TarefaResponse>> AlterarStatus(int id, AlterarStatusRequest req)
+    {
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
+
+        if (req.Status is null || !Enum.IsDefined(req.Status.Value))
+            return BadRequest(new ErroResponse("Informe o status: Pendente, EmAndamento, Concluida ou Cancelada."));
+
+        var tarefa = await _db.Tarefas
+            .Include(t => t.Subtarefas)
+            .FirstOrDefaultAsync(t => t.Id == id && t.UsuarioId == usuarioId);
+        if (tarefa is null)
+            return NotFound(new ErroResponse("Tarefa não encontrada."));
+
+        try
+        {
+            if (req.Status == StatusTarefa.Concluida)
+                tarefa.Concluir(req.TempoRealMin ?? 0);
+            else
+                tarefa.AlterarStatus(req.Status.Value);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            return BadRequest(new ErroResponse(ex.Message));
+        }
+
+        await _db.SaveChangesAsync();
+        return await Consultar(usuarioId, id).FirstAsync();
+    }
+
     // Vincula duas tarefas já cadastradas, mantendo o vínculo dentro do usuário autenticado.
     [HttpPost("{idPai:int}/subtarefas/{idFilha:int}")]
     public async Task<IActionResult> AdicionarSubtarefa(int idPai, int idFilha)
@@ -153,7 +211,10 @@ public class TarefasController : ControllerAutenticado
         if (UsuarioAtual.Id is not int usuarioId)
             return NaoIdentificado();
 
-        var pai = await _db.Tarefas.FirstOrDefaultAsync(t => t.Id == idPai && t.UsuarioId == usuarioId);
+        // As subtarefas que o pai já tem vêm junto, senão a soma das estimativas não as considera.
+        var pai = await _db.Tarefas
+            .Include(t => t.Subtarefas)
+            .FirstOrDefaultAsync(t => t.Id == idPai && t.UsuarioId == usuarioId);
         var filha = await _db.Tarefas.FirstOrDefaultAsync(t => t.Id == idFilha && t.UsuarioId == usuarioId);
         if (pai is null || filha is null)
             return NotFound(new ErroResponse("Tarefa não encontrada."));
@@ -221,5 +282,8 @@ public class TarefasController : ControllerAutenticado
         select new TarefaResponse(
             t.Id, t.Titulo, t.Descricao, t.Prazo, t.EstimativaMin,
             c.Id, c.Nome, t.Criticidade, t.Complexidade, t.Prioridade, t.Status, t.CriadoEm,
-            t.Subtarefas.Select(sub => sub.Id).ToList());
+            t.Subtarefas.Select(sub => sub.Id).ToList(),
+            t.TarefaPaiId, t.ConcluidoEm, t.TempoRealMin,
+            t.Subtarefas.Sum(sub => sub.EstimativaMin),
+            t.Subtarefas.Count(sub => sub.Status == StatusTarefa.Concluida));
 }

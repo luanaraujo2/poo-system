@@ -1,5 +1,7 @@
 <!-- Minhas tarefas: cada usuário vê só as próprias (US02). Daqui sai para "Nova tarefa" (US03),
-     para editar uma tarefa tocando no cartão (US05), para "Categorias" (US04) e para "Sair". -->
+     para editar uma tarefa tocando no cartão (US05), para "Categorias" (US04) e para "Sair".
+     A lista mostra só as tarefas principais; as subtarefas aparecem dentro delas (US06).
+     O filtro separa as abertas das concluídas e canceladas (US07). -->
 <template>
   <main class="tela">
     <header class="topo">
@@ -23,21 +25,37 @@
       <ProgressSpinner style="width: 40px; height: 40px" stroke-width="4" />
     </div>
 
-    <section v-else-if="tarefas.length === 0 && !erro" class="vazio">
+    <SelectButton
+      v-if="!carregando && principais.length"
+      v-model="filtro"
+      :options="FILTROS"
+      option-label="texto"
+      option-value="valor"
+      :allow-empty="false"
+      aria-label="Filtrar tarefas por status"
+      class="filtro"
+    />
+
+    <section v-if="!carregando && principais.length === 0 && !erro" class="vazio">
       <i class="pi pi-inbox" />
       <span class="vazio-titulo">Nenhuma tarefa ainda</span>
       <span class="dica">Cadastre a primeira para começar a organizar o seu tempo.</span>
     </section>
 
-    <ul v-else class="lista">
-      <li v-for="tarefa in tarefas" :key="tarefa.id">
+    <section v-else-if="!carregando && visiveis.length === 0 && !erro" class="vazio">
+      <i class="pi pi-check-square" />
+      <span class="vazio-titulo">{{ FILTROS.find((f) => f.valor === filtro).vazio }}</span>
+    </section>
+
+    <ul v-else-if="!carregando" class="lista">
+      <li v-for="tarefa in visiveis" :key="tarefa.id">
         <RouterLink
           :to="{ name: 'editar-tarefa', params: { id: tarefa.id } }"
           class="cartao"
         >
           <div class="linha-titulo">
             <span class="titulo">{{ tarefa.titulo }}</span>
-            <Tag :value="STATUS[tarefa.status] ?? tarefa.status" severity="secondary" />
+            <Tag :value="STATUS[tarefa.status] ?? tarefa.status" :severity="corDoStatus(tarefa.status)" />
           </div>
           <p v-if="tarefa.descricao" class="descricao">{{ tarefa.descricao }}</p>
           <div class="detalhes">
@@ -47,6 +65,10 @@
             </span>
             <span class="detalhe"><i class="pi pi-calendar" /> {{ formatarPrazo(tarefa.prazo) }}</span>
             <span class="detalhe"><i class="pi pi-clock" /> {{ formatarDuracao(tarefa.estimativaMin) }}</span>
+            <span v-if="tarefa.subtarefasIds.length" class="detalhe">
+              <i class="pi pi-sitemap" />
+              {{ tarefa.subtarefasConcluidas }}/{{ tarefa.subtarefasIds.length }} subtarefas
+            </span>
           </div>
           <div class="etiquetas">
             <Tag :value="textoDe(PRIORIDADES, tarefa.prioridade)" :severity="corDaPrioridade(tarefa.prioridade)" />
@@ -74,11 +96,12 @@ import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
+import SelectButton from 'primevue/selectbutton'
 import Tag from 'primevue/tag'
 
 import { api } from '../servicos/api'
 import { sair, sessao } from '../servicos/sessao'
-import { CRITICIDADES, PRIORIDADES, STATUS, formatarDuracao, formatarPrazo, textoDe } from '../constantes'
+import { CRITICIDADES, PRIORIDADES, STATUS, corDoStatus, formatarDuracao, formatarPrazo, textoDe } from '../constantes'
 
 const router = useRouter()
 
@@ -88,6 +111,22 @@ const carregando = ref(true)
 const erro = ref('')
 
 const primeiroNome = computed(() => sessao.usuario?.nome?.split(' ')[0] ?? '')
+
+// US07: filtro por status. "Abertas" (pendentes e em andamento) é o padrão.
+const FILTROS = [
+  { valor: 'abertas', texto: 'Abertas', status: ['Pendente', 'EmAndamento'], vazio: 'Nenhuma tarefa aberta' },
+  { valor: 'concluidas', texto: 'Concluídas', status: ['Concluida'], vazio: 'Nenhuma tarefa concluída' },
+  { valor: 'canceladas', texto: 'Canceladas', status: ['Cancelada'], vazio: 'Nenhuma tarefa cancelada' },
+  { valor: 'todas', texto: 'Todas', status: null, vazio: 'Nenhuma tarefa' },
+]
+const filtro = ref('abertas')
+
+// US06: só as tarefas principais; as subtarefas ficam dentro da tela de cada uma.
+const principais = computed(() => tarefas.value.filter((t) => t.tarefaPaiId === null))
+const visiveis = computed(() => {
+  const status = FILTROS.find((f) => f.valor === filtro.value).status
+  return status ? principais.value.filter((t) => status.includes(t.status)) : principais.value
+})
 
 function corDaCategoria(id) {
   return categorias.value.find((c) => c.id === id)?.cor ?? '#9aa6b2'
@@ -134,6 +173,24 @@ onMounted(async () => {
 h1 {
   margin: 0 0 20px;
   font-size: 26px;
+}
+
+.filtro {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.filtro :deep(.p-togglebutton) {
+  padding: 0;
+  min-height: 36px;
+  font-size: 13px;
+}
+
+.filtro :deep(.p-togglebutton-content) {
+  width: 100%;
+  justify-content: center;
+  padding: 4px 2px;
 }
 
 .carregando {
