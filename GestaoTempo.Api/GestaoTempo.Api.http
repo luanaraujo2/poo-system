@@ -3,6 +3,7 @@
 # Testes 1 a 16 (tarefas): o usuário vem do cabeçalho X-Usuario-Id (1 = teste@sgt.local), só em Development.
 # Os prazos são relativos a hoje. Rode os testes 2 e 7 antes do 12 ao 16, que usam os ids que eles devolvem.
 # Testes 17 a 26 (US04 - categorias) e 27 a 34 (US05 - editar e excluir): rode na ordem, um usa o id do outro.
+# Testes 35 a 53 (US06 - subtarefas e US07 - status): rode na ordem, a partir do 35.
 @usuario = 1
 
 ### A. US01 - Criar conta (esperado: 201)
@@ -415,4 +416,225 @@ X-Usuario-Id: {{usuario}}
 
 ### 34. US05 - Excluir de novo (esperado: 404 "Tarefa não encontrada.")
 DELETE {{host}}/api/tarefas/{{tarefaPai.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 35. US06 - Tarefa principal de 2 horas (esperado: 201)
+# @name us06Pai
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Trabalho de POO",
+  "prazo": "{{$datetime iso8601 5 d}}",
+  "estimativaMin": 120,
+  "categoriaId": 2,
+  "criticidade": "Media",
+  "complexidade": "Media",
+  "prioridade": "Importante_NaoUrgente"
+}
+
+### 36. US06 - Criar subtarefa de 1 hora dentro dela (esperado: 201, "tarefaPaiId" com o id do teste 35)
+# @name us06Sub1
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Escrever o código",
+  "prazo": "{{$datetime iso8601 5 d}}",
+  "estimativaMin": 60,
+  "categoriaId": 2,
+  "criticidade": "Media",
+  "complexidade": "Media",
+  "prioridade": "Importante_NaoUrgente",
+  "tarefaPaiId": {{us06Pai.response.body.id}}
+}
+
+### 37. US06 - Segunda subtarefa, de 50 min (esperado: 201)
+# @name us06Sub2
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Fazer os slides",
+  "prazo": "{{$datetime iso8601 5 d}}",
+  "estimativaMin": 50,
+  "categoriaId": 2,
+  "criticidade": "Media",
+  "complexidade": "Media",
+  "prioridade": "Importante_NaoUrgente",
+  "tarefaPaiId": {{us06Pai.response.body.id}}
+}
+
+### 38. US06 - Subtarefa que passa da estimativa: 60 + 50 + 30 > 120 (esperado: 400 "As subtarefas ultrapassam a estimativa da tarefa.")
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Ensaiar a apresentação",
+  "prazo": "{{$datetime iso8601 5 d}}",
+  "estimativaMin": 30,
+  "categoriaId": 2,
+  "criticidade": "Media",
+  "complexidade": "Media",
+  "prioridade": "Importante_NaoUrgente",
+  "tarefaPaiId": {{us06Pai.response.body.id}}
+}
+
+### 39. US06 - Tarefa principal que não existe (esperado: 400 "Tarefa principal não encontrada.")
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Subtarefa sem tarefa principal",
+  "prazo": "{{$datetime iso8601 5 d}}",
+  "estimativaMin": 30,
+  "categoriaId": 2,
+  "criticidade": "Media",
+  "complexidade": "Media",
+  "prioridade": "Importante_NaoUrgente",
+  "tarefaPaiId": 999999
+}
+
+### 40. US06 - Ver a tarefa principal (esperado: 200, "subtarefasMin": 110 e 2 ids em "subtarefasIds")
+GET {{host}}/api/tarefas/{{us06Pai.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 41. US07 - Subtarefa do teste 36 em andamento (esperado: 200, "status": "EmAndamento")
+PATCH {{host}}/api/tarefas/{{us06Sub1.response.body.id}}/status
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "status": "EmAndamento"
+}
+
+### 42. US07 - Concluir a tarefa principal com subtarefas abertas (esperado: 400 "Não é possível concluir a tarefa enquanto houver subtarefas pendentes.")
+PATCH {{host}}/api/tarefas/{{us06Pai.response.body.id}}/status
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "status": "Concluida",
+  "tempoRealMin": 120
+}
+
+### 43. US07 - Concluir sem informar o tempo real (esperado: 400 "Informe o tempo real gasto, maior que zero.")
+PATCH {{host}}/api/tarefas/{{us06Sub1.response.body.id}}/status
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "status": "Concluida"
+}
+
+### 44. US07 - Concluir a subtarefa do teste 36 em 70 min (esperado: 200, "concluidoEm" preenchido e "tempoRealMin": 70)
+PATCH {{host}}/api/tarefas/{{us06Sub1.response.body.id}}/status
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "status": "Concluida",
+  "tempoRealMin": 70
+}
+
+### 45. US07 - Voltar uma tarefa concluída para Pendente (esperado: 400 "Não é possivel mudar o status de uma tarefa já concluída para outro status.")
+PATCH {{host}}/api/tarefas/{{us06Sub1.response.body.id}}/status
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "status": "Pendente"
+}
+
+### 46. US07 - Concluir a subtarefa do teste 37 em 45 min (esperado: 200)
+PATCH {{host}}/api/tarefas/{{us06Sub2.response.body.id}}/status
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "status": "Concluida",
+  "tempoRealMin": 45
+}
+
+### 47. US07 - Agora a tarefa principal pode ser concluída (esperado: 200, "subtarefasConcluidas": 2)
+PATCH {{host}}/api/tarefas/{{us06Pai.response.body.id}}/status
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "status": "Concluida",
+  "tempoRealMin": 130
+}
+
+### 48. US07 - Sem informar o status (esperado: 400 "Informe o status: Pendente, EmAndamento, Concluida ou Cancelada.")
+PATCH {{host}}/api/tarefas/{{us06Pai.response.body.id}}/status
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{}
+
+### 49. US07 - Status de tarefa que não existe (esperado: 404 "Tarefa não encontrada.")
+PATCH {{host}}/api/tarefas/999999/status
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "status": "Cancelada"
+}
+
+### 50. US06 - Outra tarefa principal, de 1 hora (esperado: 201)
+# @name us06Pai2
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Estudar para a prova",
+  "prazo": "{{$datetime iso8601 5 d}}",
+  "estimativaMin": 60,
+  "categoriaId": 2,
+  "criticidade": "Media",
+  "complexidade": "Media",
+  "prioridade": "Importante_NaoUrgente"
+}
+
+### 51. US06 - Subtarefa de 50 min dentro dela (esperado: 201)
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Resolver a lista",
+  "prazo": "{{$datetime iso8601 5 d}}",
+  "estimativaMin": 50,
+  "categoriaId": 2,
+  "criticidade": "Media",
+  "complexidade": "Media",
+  "prioridade": "Importante_NaoUrgente",
+  "tarefaPaiId": {{us06Pai2.response.body.id}}
+}
+
+### 52. US06 - Tarefa avulsa de 20 min (esperado: 201)
+# @name us06Avulsa
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Revisar o resumo",
+  "prazo": "{{$datetime iso8601 5 d}}",
+  "estimativaMin": 20,
+  "categoriaId": 2,
+  "criticidade": "Media",
+  "complexidade": "Media",
+  "prioridade": "Importante_NaoUrgente"
+}
+
+### 53. US06 - Vincular a tarefa avulsa: 50 + 20 > 60 (esperado: 400 "As subtarefas ultrapassam a estimativa da tarefa.")
+POST {{host}}/api/tarefas/{{us06Pai2.response.body.id}}/subtarefas/{{us06Avulsa.response.body.id}}
 X-Usuario-Id: {{usuario}}

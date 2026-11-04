@@ -102,6 +102,15 @@ public class Tarefa
         }
     }
 
+    // US07 - Concluir: grava a data e a hora (em AlterarStatus) e o tempo real gasto, informado pelo usuário.
+    public void Concluir(int tempoRealMin)
+    {
+        if (tempoRealMin <= 0)
+            throw new ArgumentException("Informe o tempo real gasto, maior que zero.");
+        AlterarStatus(StatusTarefa.Concluida);
+        TempoRealMin = tempoRealMin;
+    }
+
     public void AdicionarSubtarefa(Tarefa subtarefa)
     {
         if (subtarefa is null)

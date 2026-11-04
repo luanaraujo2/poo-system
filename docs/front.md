@@ -8,8 +8,9 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 |---|---|---|---|
 | Entrar | `/entrar` | US02 | `views/EntrarView.vue` |
 | Criar conta | `/criar-conta` | US01 | `views/CriarContaView.vue` |
-| Minhas tarefas (lista, Categorias e Sair) | `/tarefas` | US02, US03 e US05 | `views/TarefasView.vue` |
+| Minhas tarefas (lista, filtro de status, Categorias e Sair) | `/tarefas` | US02, US03, US05, US06 e US07 | `views/TarefasView.vue` |
 | Nova tarefa | `/tarefas/nova` | US03 | `views/NovaTarefaView.vue` |
+| Nova subtarefa | `/tarefas/nova?pai={id}` | US06 | `views/NovaTarefaView.vue` |
 | Editar tarefa (com Excluir) | `/tarefas/{id}` | US05 | `views/NovaTarefaView.vue`, em modo edição |
 | Categorias | `/categorias` | US04 | `views/CategoriasView.vue` |
 
@@ -23,7 +24,9 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 | `src/router.js` | Rotas e proteção das telas que exigem login |
 | `src/servicos/api.js` | Chamadas à API com o token. Em 401 com sessão ativa, avisa que a sessão expirou |
 | `src/servicos/sessao.js` | Guarda o token, a validade e o usuário no `localStorage` (chave `sgt.sessao`). Sair é apagar |
-| `src/constantes.js` | Textos dos enums e formatadores de duração e de prazo |
+| `src/constantes.js` | Textos dos enums, cores de status e formatadores de duração e de prazo |
+| `src/components/StatusTarefa.vue` | Status da tarefa e diálogo do tempo real ao concluir (US07) |
+| `src/components/SubtarefasTarefa.vue` | Lista de subtarefas, soma das estimativas e botão "Adicionar subtarefa" (US06) |
 | `src/tema.js` | Preset do PrimeVue com o azul do protótipo |
 | `src/estilo.css` | Cores, coluna central e classes usadas em mais de uma tela |
 
@@ -53,6 +56,20 @@ Os erros de regra voltam da API como `{ "mensagem": "..." }` e a tela mostra ess
 - Mostra as categorias próprias (com lápis para renomear e lixeira para excluir) e as 5 padrão, que ficam travadas.
 - **Nova categoria**: nome e uma de 8 cores.
 - Excluir uma categoria com tarefas pede para escolher para qual categoria elas vão.
+
+## Subtarefas (US06)
+
+- Na tela "Editar tarefa", o quadro **Subtarefas** lista as subtarefas, mostra quanto delas está concluído e quanto da estimativa já foi distribuído.
+- **Adicionar subtarefa** abre "Nova subtarefa", já com a categoria da tarefa principal. Ao salvar, volta para a tarefa principal.
+- Numa subtarefa, o topo mostra "Subtarefa de ..." com o link para a principal.
+- A lista "Minhas tarefas" mostra só as tarefas principais, com "2/3 subtarefas" no cartão.
+
+## Status (US07)
+
+- O quadro **Status** fica no topo de "Editar tarefa" e grava na hora, sem precisar do botão Salvar.
+- Ao escolher **Concluída**, a tela pergunta o tempo real gasto, já sugerindo a estimativa.
+- Tarefa concluída mostra a data da conclusão e o tempo real, e não muda mais de status.
+- Em "Minhas tarefas", o filtro separa **Abertas** (pendentes e em andamento), **Concluídas**, **Canceladas** e **Todas**.
 
 ## Comandos
 

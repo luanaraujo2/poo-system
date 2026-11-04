@@ -8,6 +8,11 @@
 - **Categorias padrão travadas (US04).** As 5 categorias criadas com a conta não podem ser renomeadas nem excluídas; só as próprias.
 - **Excluir tarefa leva as subtarefas junto (US05).** O banco não deixa apagar a tarefa-pai antes das filhas (`ON DELETE RESTRICT`), então a API apaga do último nível de subtarefa para o primeiro, numa transação.
 - **Histórico fica para a US12.** Editar tarefa não grava histórico de mudanças nesta sprint.
+- **Subtarefa nasce já vinculada (US06).** O `POST /api/tarefas` aceita `tarefaPaiId`, e a tarefa é criada e vinculada na mesma gravação. O endpoint do Luan, que vincula uma tarefa que já existe, continua funcionando.
+- **Soma das subtarefas corrigida (US06).** O endpoint de vincular subtarefa não carregava as subtarefas que a tarefa-pai já tinha, então a soma podia passar da estimativa. Agora carrega (`Include`).
+- **Concluir pede o tempo real (US07).** Novo método `Tarefa.Concluir(tempoRealMin)`, que usa o `AlterarStatus` do Luan e grava o tempo real. As regras de status continuam as da classe: tarefa concluída não muda de status e a principal só é concluída com todas as subtarefas concluídas.
+- **Subtarefa cancelada também segura a principal (US06).** Pelo critério da história, a tarefa principal só é concluída com todas as subtarefas concluídas; uma subtarefa cancelada precisa ser excluída antes.
+- **Componentes separados (US06 e US07).** O status e as subtarefas ficam em `components/`, fora da tela de edição, para ela não acumular tudo.
 - **DatePicker do PrimeVue não foi usado.** No modo 24h ele não aceita hora digitada (problema no `populateTime` da versão 4.5.5). Por isso o prazo usa o campo de data do navegador e um campo de hora próprio.
 - **Cartões da lista abrem a edição (Sprint 4).** Na Sprint 3 eles não abriam nada; agora levam para "Editar tarefa".
 - **Sem tabela de sessão.** O token JWT vale 8 horas e "sair" é o front apagar o token. O token fica no `localStorage`, o que é aceitável para o projeto da faculdade.
@@ -22,12 +27,8 @@
 - **Construtor vazio em `Usuario`.** `Tarefa` já tem (Sprint 4). Falta `private Usuario() { }` para o EF parar de criar categorias na memória ao ler um usuário.
 - **Regra do prazo.** Hoje o prazo precisa ser depois do momento do cadastro (regra da classe `Tarefa`). Falta decidir se uma tarefa com prazo no dia de hoje deve valer até o fim do dia.
 - **Namespaces.** `Categoria` e os enums estão sem `namespace` (ficam no global).
-- **Endpoint de subtarefas** (`POST /api/tarefas/{idPai}/subtarefas/{idFilha}`):
-  - não carrega as subtarefas existentes antes de somar, então a soma pode passar da estimativa do pai.
-  - O erro 500 com tarefa-pai atrasada foi resolvido pelo construtor vazio de `Tarefa`.
 
 ### Fora do escopo desta sprint
 
-- Mudança de status de tarefa (US07).
-- Subtarefas no front-end.
+- Histórico das mudanças de status (US12).
 - Projeto de testes automatizados (hoje os testes são manuais, pelo `.http`).

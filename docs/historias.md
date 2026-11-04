@@ -1,13 +1,13 @@
 # Histórias
 
-Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07 (aqui estão a US04 e a US05).
+Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07.
 
 ## Quem fez o quê
 
 - **Domain** (classes `Usuario`, `Categoria` e `Tarefa`, os enums e os métodos de subtarefa): Luan.
 - **Banco de dados** das três histórias, **endpoints** das US01, US02 e US03 e **front-end**: João Vitor, em cima das classes do Domain.
 
-O endpoint de subtarefas (`POST /api/tarefas/{idPai}/subtarefas/{idFilha}`) e a migration `PersistirSubtarefas` são do Luan e não fazem parte das três histórias.
+O endpoint de vincular subtarefa (`POST /api/tarefas/{idPai}/subtarefas/{idFilha}`) e a migration `PersistirSubtarefas` são do Luan. Na US06 o endpoint passou a considerar as subtarefas que já existem na soma.
 
 ## US01 - Cadastrar conta
 
@@ -69,3 +69,23 @@ Feita por João Vitor: endpoints, modo edição da tela de tarefa e os métodos 
 | Editar a tarefa | Pronto. `PUT /api/tarefas/{id}`, com as mesmas regras do cadastro; tarefa atrasada pode ser editada sem mudar o prazo |
 | Exclusão pede confirmação | Pronto. A tela abre uma confirmação; se houver subtarefas, avisa que elas vão junto |
 | Mudanças registradas no histórico | Fica para a US12, como combinado no planejamento da Sprint 4 |
+
+## US06 - Dividir tarefa em subtarefas (Sprint 4)
+
+Feita por João Vitor: criação de subtarefa pela API e pela tela, quadro de subtarefas e correção da soma no endpoint de vincular. Os métodos de subtarefa do Domain (`AdicionarSubtarefa`, `SomarEstimativasSubtarefas`, `PodeConcluir`) são do Luan.
+
+| Critério | Situação |
+|---|---|
+| Quebrar uma tarefa em subtarefas | Pronto. "Adicionar subtarefa" na tela da tarefa; na API, `tarefaPaiId` no `POST /api/tarefas` |
+| Tempo estimado da tarefa-mãe exibe a soma das subtarefas | Pronto. A tela mostra "As subtarefas somam X de Y estimados"; a soma não pode passar da estimativa |
+| Tarefa-mãe só é concluída com todas as subtarefas concluídas | Pronto. Regra da classe `Tarefa` (`PodeConcluir`), aplicada ao concluir pela US07 |
+
+## US07 - Atualizar status (Sprint 4)
+
+Feita por João Vitor: `PATCH /api/tarefas/{id}/status`, quadro de status, filtro na lista e o método `Tarefa.Concluir`.
+
+| Critério | Situação |
+|---|---|
+| Marcar como Pendente, Em andamento, Concluída ou Cancelada | Pronto. Quadro "Status" no topo da tela da tarefa |
+| Ao concluir, grava data e hora da conclusão | Pronto (`concluidoEm`) |
+| Ao concluir, grava o tempo real gasto, informado pelo usuário | Pronto. A tela pergunta o tempo real, já sugerindo a estimativa (`tempoRealMin`) |

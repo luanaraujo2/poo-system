@@ -1,17 +1,34 @@
-<!-- US03 - Cadastrar tarefa / US05 - Editar e excluir tarefa (a mesma tela, em modo edição quando a rota traz o id) -->
+<!-- US03 - Cadastrar tarefa / US05 - Editar e excluir tarefa (a mesma tela, em modo edição quando a rota traz o id).
+     US06: com ?pai=id na rota, cadastra uma subtarefa; na edição mostra as subtarefas. US07: na edição mostra o status. -->
 <template>
   <main class="tela">
     <header class="topo">
-      <RouterLink :to="{ name: 'tarefas' }" class="fechar" aria-label="Fechar">
+      <RouterLink :to="destinoVoltar" class="fechar" aria-label="Fechar">
         <i class="pi pi-times" />
       </RouterLink>
-      <h1>{{ modoEdicao ? 'Editar tarefa' : 'Nova tarefa' }}</h1>
+      <h1>{{ tituloTela }}</h1>
       <span class="espaco" />
     </header>
 
     <div v-if="carregandoTarefa" class="carregando">
       <ProgressSpinner style="width: 40px; height: 40px" stroke-width="4" />
     </div>
+
+    <p v-if="tarefaPai" class="subtarefa-de">
+      <i class="pi pi-sitemap" aria-hidden="true" />
+      Subtarefa de
+      <RouterLink :to="{ name: 'editar-tarefa', params: { id: tarefaPai.id } }">{{ tarefaPai.titulo }}</RouterLink>
+      <template v-if="!modoEdicao">
+        · faltam {{ formatarDuracao(tarefaPai.estimativaMin - tarefaPai.subtarefasMin) }} da estimativa dela
+      </template>
+    </p>
+
+    <StatusTarefa
+      v-if="modoEdicao && tarefaOriginal && !carregandoTarefa"
+      :tarefa="tarefaOriginal"
+      class="bloco"
+      @atualizada="(tarefa) => (tarefaOriginal = tarefa)"
+    />
 
     <form v-show="!carregandoTarefa" id="form-tarefa" class="formulario" @submit.prevent="salvar">
       <Message v-if="erro" severity="error" :closable="false">{{ erro }}</Message>
@@ -141,10 +158,12 @@
     </form>
 
     <div v-show="!carregandoTarefa" class="acoes">
-      <Button label="Cancelar" severity="secondary" outlined size="large" @click="router.push({ name: 'tarefas' })" />
+      <Button label="Cancelar" severity="secondary" outlined size="large" @click="router.push(destinoVoltar)" />
       <Button type="submit" form="form-tarefa" label="Salvar" size="large" :loading="salvando" />
     </div>
     <span v-if="!modoEdicao" class="dica rodape">* campos obrigatórios. A tarefa começa como Pendente.</span>
+
+    <SubtarefasTarefa v-if="modoEdicao && tarefaOriginal && !carregandoTarefa" :tarefa="tarefaOriginal" class="bloco" />
     <Button
       v-if="modoEdicao && !carregandoTarefa && tarefaOriginal"
       label="Excluir tarefa"
@@ -179,7 +198,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
@@ -190,6 +209,8 @@ import SelectButton from 'primevue/selectbutton'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 
+import StatusTarefa from '../components/StatusTarefa.vue'
+import SubtarefasTarefa from '../components/SubtarefasTarefa.vue'
 import { api } from '../servicos/api'
 import { COMPLEXIDADES, CRITICIDADES, PRIORIDADES, formatarDuracao } from '../constantes'
 
@@ -198,7 +219,23 @@ const props = defineProps({ id: { type: String, default: null } })
 const modoEdicao = computed(() => props.id !== null)
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
+
+// US06: no cadastro, ?pai=id cria a tarefa já como subtarefa.
+const paiId = computed(() => (!modoEdicao.value && route.query.pai ? Number(route.query.pai) : null))
+const tarefaPai = ref(null)
+
+const tituloTela = computed(() => {
+  if (modoEdicao.value) return 'Editar tarefa'
+  return paiId.value ? 'Nova subtarefa' : 'Nova tarefa'
+})
+
+// Fechar, Cancelar, Salvar e Excluir voltam para a tarefa-pai, se houver; senão, para a lista.
+const destinoVoltar = computed(() => {
+  const idPai = paiId.value ?? tarefaOriginal.value?.tarefaPaiId
+  return idPai ? { name: 'editar-tarefa', params: { id: String(idPai) } } : { name: 'tarefas' }
+})
 
 // Data no formato do campo de data do navegador (aaaa-mm-dd), no horário local.
 function dataTexto(data) {
@@ -258,7 +295,11 @@ const prazoMudou = computed(
 )
 const quantidadeSubtarefas = computed(() => tarefaOriginal.value?.subtarefasIds?.length ?? 0)
 const avisoAtrasada = computed(
-  () => modoEdicao.value && tarefaOriginal.value && new Date(tarefaOriginal.value.prazo) < new Date(),
+  () =>
+    modoEdicao.value &&
+    tarefaOriginal.value &&
+    !['Concluida', 'Cancelada'].includes(tarefaOriginal.value.status) &&
+    new Date(tarefaOriginal.value.prazo) < new Date(),
 )
 // Uma tarefa atrasada continua mostrando o dia original no campo de data.
 const dataMinima = computed(() =>
@@ -281,6 +322,13 @@ onMounted(async () => {
     ])
     categorias.value = listaCategorias
     if (tarefa) preencher(tarefa)
+
+    // Subtarefa: busca a tarefa-pai para mostrar o nome dela (e, no cadastro, já usar a mesma categoria).
+    const idPai = paiId.value ?? tarefa?.tarefaPaiId
+    if (idPai) {
+      tarefaPai.value = await api(`/tarefas/${idPai}`)
+      if (!modoEdicao.value) categoriaId.value = tarefaPai.value.categoriaId
+    }
   } catch (e) {
     erro.value = e.status === 404 ? 'Tarefa não encontrada.' : e.message
   } finally {
@@ -360,11 +408,12 @@ async function salvar() {
         criticidade: criticidade.value,
         complexidade: complexidade.value,
         prioridade: prioridade.value,
+        tarefaPaiId: paiId.value,
       },
     })
-    const resumo = modoEdicao.value ? 'Tarefa atualizada' : 'Tarefa cadastrada'
+    const resumo = modoEdicao.value ? 'Tarefa atualizada' : paiId.value ? 'Subtarefa cadastrada' : 'Tarefa cadastrada'
     toast.add({ severity: 'success', summary: resumo, detail: tarefa.titulo, life: 3000 })
-    router.push({ name: 'tarefas' })
+    router.push(destinoVoltar.value)
   } catch (e) {
     erro.value = e.message
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -378,7 +427,7 @@ async function excluir() {
   try {
     await api(`/tarefas/${props.id}`, { metodo: 'DELETE' })
     toast.add({ severity: 'success', summary: 'Tarefa excluída', detail: tarefaOriginal.value.titulo, life: 3000 })
-    router.push({ name: 'tarefas' })
+    router.push(destinoVoltar.value)
   } catch (e) {
     confirmandoExclusao.value = false
     erro.value = e.message
@@ -553,6 +602,24 @@ h1 {
 .rodape {
   margin-top: 12px;
   text-align: center;
+}
+
+.subtarefa-de {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--sgt-texto-suave);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+
+.subtarefa-de a {
+  font-weight: 600;
+}
+
+.bloco {
+  margin-top: 14px;
 }
 
 .carregando {
