@@ -105,6 +105,21 @@ Abra `GestaoTempo.Api/GestaoTempo.Api.http` no VS Code (extensão REST Client) e
 
 Algo não funcionou? Veja [docs/problemas.md](docs/problemas.md).
 
+### Verificar a compilação
+
+Para conferir se a API compila:
+
+```
+dotnet build SGT.slnx
+```
+
+Para gerar a versão de produção do front-end:
+
+```
+cd frontend
+npm run build
+```
+
 ## Configuração
 
 | Chave | Arquivo | Para que serve |
