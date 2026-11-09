@@ -27,12 +27,13 @@ Projeto FullStack para um melhor aproveitamento do seu tempo.
 |---|---|---|
 | US08 | Informar disponibilidade | Pronta: cadastrar, editar e excluir blocos semanais; horários válidos e sem sobreposição no mesmo dia |
 | US09 | Ver alerta de sobrecarga | Pronta: compara tarefas abertas e tempo livre da semana atual; alerta informa o excesso |
+| US10 | Receber sugestão de ordem de execução | Pronta: pontua prazo, criticidade, prioridade e complexidade; destaca atrasadas e permite ordem manual |
 
 ## Documentação
 
 | Arquivo | Conteúdo |
 |---|---|
-| [docs/historias.md](docs/historias.md) | Critérios de aceite das US01 a US09 e quem fez cada parte |
+| [docs/historias.md](docs/historias.md) | Critérios de aceite das US01 a US10 e quem fez cada parte |
 | [docs/api.md](docs/api.md) | Endpoints, exemplos de requisição e resposta, regras e erros |
 | [docs/banco.md](docs/banco.md) | Tabelas, decisões do banco e migrations |
 | [docs/banco.sql](docs/banco.sql) | Script SQL do esquema, para entrega e consulta |

@@ -50,6 +50,19 @@
       class="filtro"
     />
 
+    <div v-if="!carregando && principais.length" class="controles-ordem">
+      <span class="rotulo-ordem">Ordem</span>
+      <SelectButton
+        v-model="modoOrdem"
+        :options="MODOS_ORDEM"
+        option-label="texto"
+        option-value="valor"
+        :allow-empty="false"
+        aria-label="Ordenar tarefas"
+        class="seletor-ordem"
+      />
+    </div>
+
     <section v-if="!carregando && principais.length === 0 && !erro" class="vazio">
       <i class="pi pi-inbox" />
       <span class="vazio-titulo">Nenhuma tarefa ainda</span>
@@ -62,15 +75,16 @@
     </section>
 
     <ul v-else-if="!carregando" class="lista">
-      <li v-for="tarefa in visiveis" :key="tarefa.id">
+      <li v-for="tarefa in visiveis" :key="tarefa.id" class="item-tarefa">
         <RouterLink
           :to="{ name: 'editar-tarefa', params: { id: tarefa.id } }"
-          class="cartao"
+          :class="['cartao', { atrasada: estaAtrasada(tarefa) }]"
         >
           <div class="linha-titulo">
             <span class="titulo">{{ tarefa.titulo }}</span>
             <Tag :value="STATUS[tarefa.status] ?? tarefa.status" :severity="corDoStatus(tarefa.status)" />
           </div>
+          <Tag v-if="estaAtrasada(tarefa)" value="Atrasada" severity="danger" class="etiqueta-atrasada" />
           <p v-if="tarefa.descricao" class="descricao">{{ tarefa.descricao }}</p>
           <div class="detalhes">
             <span class="detalhe">
@@ -87,8 +101,29 @@
           <div class="etiquetas">
             <Tag :value="textoDe(PRIORIDADES, tarefa.prioridade)" :severity="corDaPrioridade(tarefa.prioridade)" />
             <Tag :value="`Criticidade ${textoDe(CRITICIDADES, tarefa.criticidade).toLowerCase()}`" severity="secondary" />
+            <Tag :value="`Pontuação ${pontuacao(tarefa)}`" severity="contrast" />
           </div>
         </RouterLink>
+        <div v-if="modoOrdem === 'manual'" class="controles-manual" :aria-label="`Reordenar ${tarefa.titulo}`">
+          <Button
+            icon="pi pi-arrow-up"
+            severity="secondary"
+            text
+            rounded
+            :disabled="!podeMover(tarefa, -1)"
+            :aria-label="`Mover ${tarefa.titulo} para cima`"
+            @click="mover(tarefa, -1)"
+          />
+          <Button
+            icon="pi pi-arrow-down"
+            severity="secondary"
+            text
+            rounded
+            :disabled="!podeMover(tarefa, 1)"
+            :aria-label="`Mover ${tarefa.titulo} para baixo`"
+            @click="mover(tarefa, 1)"
+          />
+        </div>
       </li>
     </ul>
 
@@ -105,7 +140,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
@@ -125,6 +160,11 @@ const carregando = ref(true)
 const erro = ref('')
 const sobrecarga = ref(null)
 const erroSobrecarga = ref('')
+const idUsuario = sessao.usuario?.id ?? 'usuario'
+const CHAVE_ORDEM = `sgt.ordemTarefas.${idUsuario}`
+const CHAVE_MODO_ORDEM = `sgt.modoOrdemTarefas.${idUsuario}`
+const modoOrdem = ref(lerModoOrdem())
+const ordemManual = ref(lerOrdemManual())
 
 const primeiroNome = computed(() => sessao.usuario?.nome?.split(' ')[0] ?? '')
 
@@ -136,13 +176,118 @@ const FILTROS = [
   { valor: 'todas', texto: 'Todas', status: null, vazio: 'Nenhuma tarefa' },
 ]
 const filtro = ref('abertas')
+const MODOS_ORDEM = [
+  { valor: 'sugestao', texto: 'Sugestão' },
+  { valor: 'manual', texto: 'Manual' },
+]
 
 // US06: só as tarefas principais; as subtarefas ficam dentro da tela de cada uma.
 const principais = computed(() => tarefas.value.filter((t) => t.tarefaPaiId === null))
 const visiveis = computed(() => {
   const status = FILTROS.find((f) => f.valor === filtro.value).status
-  return status ? principais.value.filter((t) => status.includes(t.status)) : principais.value
+  const filtradas = status ? principais.value.filter((t) => status.includes(t.status)) : principais.value
+  return [...filtradas].sort((a, b) => {
+    const atrasoA = estaAtrasada(a)
+    const atrasoB = estaAtrasada(b)
+    if (atrasoA !== atrasoB) return atrasoA ? -1 : 1
+
+    if (modoOrdem.value === 'manual') {
+      return indiceManual(a.id) - indiceManual(b.id) || a.id - b.id
+    }
+    return pontuacao(b) - pontuacao(a) || new Date(a.prazo) - new Date(b.prazo) || a.id - b.id
+  })
 })
+
+function lerOrdemManual() {
+  try {
+    const salva = JSON.parse(localStorage.getItem(CHAVE_ORDEM) ?? '[]')
+    return Array.isArray(salva) ? salva.filter(Number.isInteger) : []
+  } catch {
+    return []
+  }
+}
+
+function lerModoOrdem() {
+  try {
+    return localStorage.getItem(CHAVE_MODO_ORDEM) === 'manual' ? 'manual' : 'sugestao'
+  } catch {
+    return 'sugestao'
+  }
+}
+
+watch(modoOrdem, (modo) => {
+  try {
+    localStorage.setItem(CHAVE_MODO_ORDEM, modo)
+  } catch {
+    // O modo escolhido continua valendo até sair desta tela.
+  }
+})
+
+function salvarOrdemManual() {
+  try {
+    localStorage.setItem(CHAVE_ORDEM, JSON.stringify(ordemManual.value))
+  } catch {
+    // A ordenação manual continua valendo até sair desta tela.
+  }
+}
+
+function indiceManual(id) {
+  const indice = ordemManual.value.indexOf(id)
+  return indice < 0 ? Number.MAX_SAFE_INTEGER : indice
+}
+
+function estaAtrasada(tarefa) {
+  return ['Pendente', 'EmAndamento'].includes(tarefa.status) && new Date(tarefa.prazo) < new Date()
+}
+
+function prazoPontos(tarefa) {
+  if (estaAtrasada(tarefa)) return 40
+
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  const prazo = new Date(tarefa.prazo)
+  prazo.setHours(0, 0, 0, 0)
+  const dias = Math.round((prazo - hoje) / 86400000)
+  if (dias <= 0) return 35
+  if (dias <= 1) return 30
+  if (dias <= 3) return 20
+  if (dias <= 7) return 10
+  return 0
+}
+
+function pontuacao(tarefa) {
+  const pontosCriticidade = { Baixa: 0, Media: 10, Alta: 20, Critica: 30 }
+  const pontosPrioridade = {
+    Urgente_Importante: 20,
+    Importante_NaoUrgente: 15,
+    Urgente_NaoImportante: 10,
+    NaoUrgente_NaoImportante: 0,
+  }
+  const pontosComplexidade = { Baixa: 0, Media: 5, Alta: 10 }
+  return prazoPontos(tarefa)
+    + pontosCriticidade[tarefa.criticidade]
+    + pontosPrioridade[tarefa.prioridade]
+    + pontosComplexidade[tarefa.complexidade]
+}
+
+function podeMover(tarefa, direcao) {
+  const indice = visiveis.value.findIndex((item) => item.id === tarefa.id)
+  const vizinha = visiveis.value[indice + direcao]
+  return Boolean(vizinha && estaAtrasada(vizinha) === estaAtrasada(tarefa))
+}
+
+function mover(tarefa, direcao) {
+  if (!podeMover(tarefa, direcao)) return
+  const indice = visiveis.value.findIndex((item) => item.id === tarefa.id)
+  const vizinha = visiveis.value[indice + direcao]
+  const ordem = [...ordemManual.value]
+  const indiceTarefa = ordem.indexOf(tarefa.id)
+  const indiceVizinha = ordem.indexOf(vizinha.id)
+  if (indiceTarefa < 0 || indiceVizinha < 0) return
+  ;[ordem[indiceTarefa], ordem[indiceVizinha]] = [ordem[indiceVizinha], ordem[indiceTarefa]]
+  ordemManual.value = ordem
+  salvarOrdemManual()
+}
 
 function corDaCategoria(id) {
   return categorias.value.find((c) => c.id === id)?.cor ?? '#9aa6b2'
@@ -163,12 +308,24 @@ function sairDaConta() {
 }
 
 onMounted(async () => {
+  let tarefasCarregadas = false
   try {
     ;[tarefas.value, categorias.value] = await Promise.all([api('/tarefas'), api('/categorias')])
+    tarefasCarregadas = true
   } catch (e) {
     erro.value = e.message
   } finally {
     carregando.value = false
+  }
+
+  if (tarefasCarregadas) {
+    const idsAtuais = new Set(principais.value.map((t) => t.id))
+    const ordemAtual = ordemManual.value.filter((id) => idsAtuais.has(id))
+    for (const tarefa of [...principais.value].sort((a, b) => pontuacao(b) - pontuacao(a))) {
+      if (!ordemAtual.includes(tarefa.id)) ordemAtual.push(tarefa.id)
+    }
+    ordemManual.value = ordemAtual
+    salvarOrdemManual()
   }
 
   try {
@@ -201,6 +358,25 @@ h1 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 14px;
+}
+
+.controles-ordem {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: -4px 0 14px;
+}
+
+.rotulo-ordem {
+  color: var(--sgt-texto-suave);
+  font-size: 13px;
+}
+
+.seletor-ordem :deep(.p-togglebutton) {
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: 13px;
 }
 
 .filtro :deep(.p-togglebutton) {
@@ -251,7 +427,15 @@ h1 {
   gap: 12px;
 }
 
+.item-tarefa {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .cartao {
+  flex: 1;
+  min-width: 0;
   background: #fff;
   border: 1px solid var(--sgt-borda);
   border-radius: 12px;
@@ -261,6 +445,20 @@ h1 {
   gap: 8px;
   color: inherit;
   text-decoration: none;
+}
+
+.cartao.atrasada {
+  border-color: #ef4444;
+  background: #fff7f7;
+}
+
+.etiqueta-atrasada {
+  align-self: flex-start;
+}
+
+.controles-manual {
+  display: flex;
+  flex-direction: column;
 }
 
 .cartao:hover {

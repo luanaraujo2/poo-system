@@ -8,7 +8,7 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 |---|---|---|---|
 | Entrar | `/entrar` | US02 | `views/EntrarView.vue` |
 | Criar conta | `/criar-conta` | US01 | `views/CriarContaView.vue` |
-| Minhas tarefas (lista, alerta, filtro de status, Categorias e Sair) | `/tarefas` | US02, US03, US05, US06, US07 e US09 | `views/TarefasView.vue` |
+| Minhas tarefas (lista, alertas, filtro de status, Categorias e Sair) | `/tarefas` | US02, US03, US05, US06, US07, US09 e US10 | `views/TarefasView.vue` |
 | Nova tarefa | `/tarefas/nova` | US03 | `views/NovaTarefaView.vue` |
 | Nova subtarefa | `/tarefas/nova?pai={id}` | US06 | `views/NovaTarefaView.vue` |
 | Editar tarefa (com Excluir) | `/tarefas/{id}` | US05 | `views/NovaTarefaView.vue`, em modo edição |
@@ -29,7 +29,7 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 | `src/components/StatusTarefa.vue` | Status da tarefa e diálogo do tempo real ao concluir (US07) |
 | `src/components/SubtarefasTarefa.vue` | Lista de subtarefas, soma das estimativas e botão "Adicionar subtarefa" (US06) |
 | `src/views/DisponibilidadeView.vue` | Cadastro, edição e exclusão dos blocos semanais de tempo livre (US08) |
-| `src/views/TarefasView.vue` | Lista e filtro de tarefas e alerta de sobrecarga semanal (US09) |
+| `src/views/TarefasView.vue` | Lista, filtros, alerta de sobrecarga (US09) e sugestão de ordem (US10) |
 | `src/tema.js` | Preset do PrimeVue com o azul do protótipo |
 | `src/estilo.css` | Cores, coluna central e classes usadas em mais de uma tela |
 
@@ -85,6 +85,12 @@ Os erros de regra voltam da API como `{ "mensagem": "..." }` e a tela mostra ess
 - Na tela "Minhas tarefas", um aviso aparece quando as tarefas abertas com prazo na semana atual excedem o tempo livre cadastrado para essa semana.
 - O aviso mostra o excesso em horas e minutos e informa os totais de tempo estimado e livre.
 - Se a semana não estiver sobrecarregada, o aviso não aparece.
+
+## Ordem de execução (US10)
+
+- A lista começa em **Sugestão**, ordenada por pontuação de prazo, criticidade, prioridade e complexidade. A pontuação aparece em cada cartão.
+- Tarefas abertas atrasadas aparecem no topo e ficam destacadas em vermelho.
+- Em **Manual**, os controles de seta reordenam as tarefas. A escolha fica salva no navegador para cada usuário; tarefas atrasadas continuam agrupadas no topo.
 
 ## Comandos
 

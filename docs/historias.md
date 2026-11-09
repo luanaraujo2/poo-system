@@ -1,6 +1,6 @@
 # Histórias
 
-Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07. Sprint 5: US08 e US09.
+Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07. Sprint 5: US08 a US10.
 
 ## Quem fez o quê
 
@@ -105,3 +105,21 @@ Feita por João Vitor: `PATCH /api/tarefas/{id}/status`, quadro de status, filtr
 | Comparar a soma estimada das tarefas abertas com os blocos livres de um período | Pronto. Compara tarefas abertas com prazo na semana atual (segunda a domingo) com os blocos semanais da US08 |
 | Exibir alerta quando tarefas passam o tempo livre | Pronto. O alerta aparece no topo de "Minhas tarefas" somente quando há sobrecarga |
 | Informar quantas horas passam do tempo livre | Pronto. Mostra o excesso em horas e minutos, além dos totais estimado e livre |
+
+## US10 - Receber sugestão de ordem de execução (Sprint 5)
+
+| Critério | Situação |
+|---|---|
+| Ordenar as tarefas por pontuação calculada com prazo, criticidade, prioridade e complexidade | Pronto. Soma os pontos dos quatro critérios, com máximo de 100 pontos |
+| Mostrar a pontuação de cada tarefa | Pronto. Cada cartão exibe a pontuação sugerida |
+| Tarefas vencidas aparecem no topo e destacadas | Pronto. Tarefas abertas atrasadas ficam antes das demais, com etiqueta e cartão em vermelho |
+| Permitir que o usuário mude a ordem manualmente | Pronto. Modo manual com controles para mover tarefas para cima ou para baixo; a ordem fica salva no navegador por usuário |
+
+### Pontuação da US10
+
+- **Prazo (0 a 40)**: atrasada = 40; vence hoje = 35; amanhã = 30; em até 3 dias = 20; em até 7 dias = 10; depois disso = 0.
+- **Criticidade (0 a 30)**: Baixa = 0, Média = 10, Alta = 20, Crítica = 30.
+- **Prioridade (0 a 20)**: nem urgente nem importante = 0; urgente não importante = 10; importante não urgente = 15; urgente e importante = 20.
+- **Complexidade (0 a 10)**: Baixa = 0, Média = 5, Alta = 10.
+
+Tarefas atrasadas permanecem no topo também no modo manual; a ordem manual pode ser alterada dentro dos grupos de atrasadas e não atrasadas.
