@@ -151,6 +151,7 @@ import Tag from 'primevue/tag'
 import { api } from '../servicos/api'
 import { sair, sessao } from '../servicos/sessao'
 import { CRITICIDADES, PRIORIDADES, STATUS, corDoStatus, formatarDuracao, formatarPrazo, textoDe } from '../constantes'
+import { estaAtrasada, moverNaOrdem, ordenarTarefas, pontuacao } from '../servicos/ordemTarefas'
 
 const router = useRouter()
 
@@ -186,16 +187,7 @@ const principais = computed(() => tarefas.value.filter((t) => t.tarefaPaiId === 
 const visiveis = computed(() => {
   const status = FILTROS.find((f) => f.valor === filtro.value).status
   const filtradas = status ? principais.value.filter((t) => status.includes(t.status)) : principais.value
-  return [...filtradas].sort((a, b) => {
-    const atrasoA = estaAtrasada(a)
-    const atrasoB = estaAtrasada(b)
-    if (atrasoA !== atrasoB) return atrasoA ? -1 : 1
-
-    if (modoOrdem.value === 'manual') {
-      return indiceManual(a.id) - indiceManual(b.id) || a.id - b.id
-    }
-    return pontuacao(b) - pontuacao(a) || new Date(a.prazo) - new Date(b.prazo) || a.id - b.id
-  })
+  return ordenarTarefas(filtradas, { modo: modoOrdem.value, ordemManual: ordemManual.value })
 })
 
 function lerOrdemManual() {
@@ -231,45 +223,6 @@ function salvarOrdemManual() {
   }
 }
 
-function indiceManual(id) {
-  const indice = ordemManual.value.indexOf(id)
-  return indice < 0 ? Number.MAX_SAFE_INTEGER : indice
-}
-
-function estaAtrasada(tarefa) {
-  return ['Pendente', 'EmAndamento'].includes(tarefa.status) && new Date(tarefa.prazo) < new Date()
-}
-
-function prazoPontos(tarefa) {
-  if (estaAtrasada(tarefa)) return 40
-
-  const hoje = new Date()
-  hoje.setHours(0, 0, 0, 0)
-  const prazo = new Date(tarefa.prazo)
-  prazo.setHours(0, 0, 0, 0)
-  const dias = Math.round((prazo - hoje) / 86400000)
-  if (dias <= 0) return 35
-  if (dias <= 1) return 30
-  if (dias <= 3) return 20
-  if (dias <= 7) return 10
-  return 0
-}
-
-function pontuacao(tarefa) {
-  const pontosCriticidade = { Baixa: 0, Media: 10, Alta: 20, Critica: 30 }
-  const pontosPrioridade = {
-    Urgente_Importante: 20,
-    Importante_NaoUrgente: 15,
-    Urgente_NaoImportante: 10,
-    NaoUrgente_NaoImportante: 0,
-  }
-  const pontosComplexidade = { Baixa: 0, Media: 5, Alta: 10 }
-  return prazoPontos(tarefa)
-    + pontosCriticidade[tarefa.criticidade]
-    + pontosPrioridade[tarefa.prioridade]
-    + pontosComplexidade[tarefa.complexidade]
-}
-
 function podeMover(tarefa, direcao) {
   const indice = visiveis.value.findIndex((item) => item.id === tarefa.id)
   const vizinha = visiveis.value[indice + direcao]
@@ -280,12 +233,7 @@ function mover(tarefa, direcao) {
   if (!podeMover(tarefa, direcao)) return
   const indice = visiveis.value.findIndex((item) => item.id === tarefa.id)
   const vizinha = visiveis.value[indice + direcao]
-  const ordem = [...ordemManual.value]
-  const indiceTarefa = ordem.indexOf(tarefa.id)
-  const indiceVizinha = ordem.indexOf(vizinha.id)
-  if (indiceTarefa < 0 || indiceVizinha < 0) return
-  ;[ordem[indiceTarefa], ordem[indiceVizinha]] = [ordem[indiceVizinha], ordem[indiceTarefa]]
-  ordemManual.value = ordem
+  ordemManual.value = moverNaOrdem(ordemManual.value, tarefa.id, vizinha.id)
   salvarOrdemManual()
 }
 

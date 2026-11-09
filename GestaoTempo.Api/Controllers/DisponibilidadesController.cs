@@ -43,12 +43,18 @@ public class DisponibilidadesController : ControllerAutenticado
         var dia = req.DiaSemana!.Value;
         var inicio = req.HoraInicio!.Value;
         var fim = req.HoraFim!.Value;
+
+        // Serializa gravações do mesmo usuário/dia para duas requisições simultâneas
+        // não passarem juntas pela verificação de sobreposição.
+        await using var transacao = await _db.Database.BeginTransactionAsync();
+        await BloquearDiaAsync(usuarioId, dia);
         if (await Sobrepoe(usuarioId, dia, inicio, fim))
             return Conflict(new ErroResponse("Este horário se sobrepõe a outro bloco deste dia."));
 
         var disponibilidade = new Disponibilidade(usuarioId, dia, inicio, fim);
         _db.Disponibilidades.Add(disponibilidade);
         await _db.SaveChangesAsync();
+        await transacao.CommitAsync();
         var resposta = new DisponibilidadeResponse(disponibilidade.Id, dia, inicio, fim);
         return CreatedAtAction(nameof(Listar), resposta);
     }
@@ -69,11 +75,15 @@ public class DisponibilidadesController : ControllerAutenticado
         var dia = req.DiaSemana!.Value;
         var inicio = req.HoraInicio!.Value;
         var fim = req.HoraFim!.Value;
+
+        await using var transacao = await _db.Database.BeginTransactionAsync();
+        await BloquearDiaAsync(usuarioId, dia);
         if (await Sobrepoe(usuarioId, dia, inicio, fim, id))
             return Conflict(new ErroResponse("Este horário se sobrepõe a outro bloco deste dia."));
 
         disponibilidade.Editar(dia, inicio, fim);
         await _db.SaveChangesAsync();
+        await transacao.CommitAsync();
         return new DisponibilidadeResponse(id, dia, inicio, fim);
     }
 
@@ -102,6 +112,13 @@ public class DisponibilidadesController : ControllerAutenticado
         if (req.HoraFim.Value <= req.HoraInicio.Value)
             return new ErroResponse("A hora de fim deve ser maior que a hora de início.");
         return null;
+    }
+
+    private Task<int> BloquearDiaAsync(int usuarioId, GestaoTempo.Domain.Enums.DiaSemana dia)
+    {
+        var chaveDia = (int)dia;
+        return _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({usuarioId}, {chaveDia})");
     }
 
     // Intervalos adjacentes são permitidos; só há conflito quando a interseção é maior que zero.

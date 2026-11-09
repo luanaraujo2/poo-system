@@ -128,6 +128,12 @@ cd frontend
 npm run build
 ```
 
+### Testes da pontuação e da ordem das tarefas
+
+```bash
+node frontend/test/ordemTarefas.test.js
+```
+
 ## Configuração
 
 | Chave | Arquivo | Para que serve |
