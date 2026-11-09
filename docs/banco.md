@@ -11,27 +11,31 @@ O script [banco.sql](banco.sql) é uma cópia legível do esquema, para entrega 
 | `usuario` | `id_usuario`, `nome`, `email` (único, `citext`), `senha_hash`, `criado_em` |
 | `categoria` | `id_categoria`, `id_usuario`, `nome`, `cor`, `padrao` |
 | `tarefa` | `id_tarefa`, `id_usuario`, `id_categoria`, `id_tarefa_pai`, `titulo`, `descricao`, `prazo`, `estimativa_min`, `tempo_real_min`, `criticidade`, `complexidade`, `prioridade`, `status`, `criada_em`, `concluida_em` |
+| `disponibilidade` | `id_disponibilidade`, `id_usuario`, `dia_semana`, `hora_inicio`, `hora_fim` |
 
 Relações:
 
 - `categoria.id_usuario` e `tarefa.id_usuario` apontam para `usuario` (apagar o usuário apaga categorias e tarefas).
 - `tarefa.id_categoria` aponta para `categoria` (não dá para apagar uma categoria em uso).
 - `tarefa.id_tarefa_pai` aponta para outra tarefa (subtarefa). A chave estrangeira é composta, `(id_tarefa_pai, id_usuario)`, o que impede que pai e filha sejam de usuários diferentes.
+- `disponibilidade.id_usuario` aponta para o usuário dono dos blocos; apagar o usuário apaga suas disponibilidades.
 
 Os enums são gravados como texto.
 
 ## O que as migrations criam
 
-- as três tabelas, com chaves primárias, chaves estrangeiras e índices;
+- as tabelas, com chaves primárias, chaves estrangeiras e índices;
 - a extensão `citext`, usada em `usuario.email` para o e-mail único e o login ignorarem maiúsculas e minúsculas;
 - CHECKs em `tarefa`, para o banco recusar dados fora das regras;
 - índice único de nome de categoria por usuário e índices para listar tarefas por status e por prazo;
 - as subtarefas (`id_tarefa_pai`, a chave `AK_tarefa_id_tarefa_id_usuario`, o CHECK que impede uma tarefa de ser pai de si mesma e a FK composta).
+- a disponibilidade semanal, vinculada ao usuário e com CHECK para garantir fim posterior ao início.
 
 | Migration | Autor | O que faz |
 |---|---|---|
 | `CriacaoInicial` | João Vitor | `usuario`, `categoria` e `tarefa` |
 | `PersistirSubtarefas` | Luan | coluna e constraints de subtarefa |
+| `CadastrarDisponibilidade` | US08 | tabela de blocos semanais, vínculo ao usuário e validação do intervalo |
 
 ## Decisões
 
@@ -43,6 +47,7 @@ Os enums são gravados como texto.
 - **Datas**: as classes usam `DateTime.Now`. O `AppDbContext` converte para UTC ao gravar, porque o PostgreSQL (`timestamptz`) só aceita UTC. A API devolve as datas em UTC.
 - **Sessão**: não há tabela de sessão. O login usa token, então "sair" é só descartar o token no front.
 - **Dados de teste**: só em Development, a API cria `teste@sgt.local` (senha `12345678`) com as 5 categorias, se não houver nenhum usuário.
+- **Disponibilidade (US08)**: horários são armazenados como `time without time zone`; a API impede sobreposição para o mesmo usuário e dia. O banco garante fim posterior ao início.
 
 ## Migrations
 

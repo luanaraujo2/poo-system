@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<Tarefa> Tarefas => Set<Tarefa>();
+    public DbSet<Disponibilidade> Disponibilidades => Set<Disponibilidade>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -57,6 +58,24 @@ public class AppDbContext : DbContext
 
             // Um usuário não pode ter duas categorias com o mesmo nome.
             e.HasIndex(c => new { c.UsuarioId, c.Nome }).IsUnique();
+        });
+
+        modelBuilder.Entity<Disponibilidade>(e =>
+        {
+            e.ToTable("disponibilidade", t =>
+            {
+                t.HasCheckConstraint("CK_disponibilidade_horario_valido", "hora_fim > hora_inicio");
+                t.HasCheckConstraint("CK_disponibilidade_dia_valido",
+                    "dia_semana IN ('Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado', 'Domingo')");
+            });
+            e.HasKey(d => d.Id);
+            e.Property(d => d.Id).HasColumnName("id_disponibilidade");
+            e.Property(d => d.UsuarioId).HasColumnName("id_usuario");
+            e.Property(d => d.DiaSemana).HasColumnName("dia_semana").HasConversion<string>().HasMaxLength(10);
+            e.Property(d => d.HoraInicio).HasColumnName("hora_inicio");
+            e.Property(d => d.HoraFim).HasColumnName("hora_fim");
+            e.HasIndex(d => new { d.UsuarioId, d.DiaSemana, d.HoraInicio });
+            e.HasOne<Usuario>().WithMany().HasForeignKey(d => d.UsuarioId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Tarefa>(e =>

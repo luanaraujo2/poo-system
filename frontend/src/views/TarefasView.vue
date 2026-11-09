@@ -14,6 +14,13 @@
           text
           @click="router.push({ name: 'categorias' })"
         />
+        <Button
+          label="Disponibilidade"
+          icon="pi pi-clock"
+          severity="secondary"
+          text
+          @click="router.push({ name: 'disponibilidade' })"
+        />
         <Button label="Sair" icon="pi pi-sign-out" severity="secondary" text @click="sairDaConta" />
       </div>
     </header>

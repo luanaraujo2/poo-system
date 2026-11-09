@@ -11,6 +11,10 @@ Base: `http://localhost:5224`. Tudo em JSON, com campos em camelCase. Enums traf
 | POST | `/api/categorias` | Cria categoria própria (US04) | 201, 400, 401, 409 |
 | PUT | `/api/categorias/{id}` | Renomeia e troca a cor de categoria própria (US04) | 200, 400, 401, 404, 409 |
 | DELETE | `/api/categorias/{id}?moverPara={id}` | Exclui categoria própria, movendo as tarefas dela (US04) | 204, 400, 401, 404, 409 |
+| GET | `/api/disponibilidades` | Lista os blocos do usuário (US08) | 200, 401 |
+| POST | `/api/disponibilidades` | Cadastra bloco de disponibilidade (US08) | 201, 400, 401, 409 |
+| PUT | `/api/disponibilidades/{id}` | Edita bloco do usuário (US08) | 200, 400, 401, 404, 409 |
+| DELETE | `/api/disponibilidades/{id}` | Exclui bloco do usuário (US08) | 204, 401, 404 |
 | POST | `/api/tarefas` | Cadastra tarefa (US03) | 201, 400, 401 |
 | GET | `/api/tarefas` | Lista as tarefas do usuário, por prazo | 200, 401 |
 | GET | `/api/tarefas/{id}` | Obtém uma tarefa do usuário | 200, 401, 404 |
@@ -148,6 +152,16 @@ Para criar uma tarefa já como subtarefa, mande `"tarefaPaiId": 1` no `POST /api
 
 `tempoRealMin` só é pedido para concluir. A resposta é a tarefa atualizada, com `concluidoEm` e `tempoRealMin` preenchidos.
 
+## Disponibilidade (US08)
+
+`POST /api/disponibilidades` e `PUT /api/disponibilidades/{id}` recebem os mesmos campos:
+
+```json
+{ "diaSemana": "Segunda", "horaInicio": "09:00:00", "horaFim": "12:00:00" }
+```
+
+Os dias aceitos são `Segunda`, `Terca`, `Quarta`, `Quinta`, `Sexta`, `Sabado` e `Domingo`. `GET /api/disponibilidades` lista os blocos do usuário, ordenados por dia e início. A hora de fim precisa ser posterior à hora de início. Horários que se cruzem no mesmo dia retornam 409; blocos encostados, como 09:00–10:00 e 10:00–11:00, são permitidos. A resposta inclui `id`, `diaSemana`, `horaInicio` e `horaFim`.
+
 ## Editar e excluir tarefa (US05)
 
 `PUT /api/tarefas/{id}` recebe os mesmos campos do cadastro e devolve a tarefa atualizada. O status não muda aqui (é pelo `PATCH .../status`, da US07), e `tarefaPaiId` é ignorado.
@@ -197,6 +211,12 @@ As regras de nome, e-mail, título, tempo estimado e prazo ficam nos construtore
 - A tarefa principal só é concluída quando todas as subtarefas estão concluídas.
 - Tarefa concluída não muda mais de status (regra da classe `Tarefa`).
 - O registro das mudanças no histórico fica para a US12.
+
+**Disponibilidade (US08)**
+- Dia da semana, hora de início e hora de fim são obrigatórios; o dia precisa ser válido.
+- A hora de fim deve ser posterior à hora de início.
+- Blocos do mesmo dia não podem se sobrepor para o mesmo usuário; horários adjacentes são aceitos.
+- Cada usuário lista e altera apenas os próprios blocos.
 
 **Categoria (US04)**
 - Nome com pelo menos 3 e no máximo 50 caracteres, sem repetir outra categoria do usuário (sem diferenciar maiúsculas).
