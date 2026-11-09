@@ -1,6 +1,6 @@
 # Histórias
 
-Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07. Sprint 5: US08.
+Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07. Sprint 5: US08 e US09.
 
 ## Quem fez o quê
 
@@ -97,3 +97,11 @@ Feita por João Vitor: `PATCH /api/tarefas/{id}/status`, quadro de status, filtr
 | Cadastrar blocos de tempo livre por dia da semana, com início e fim | Pronto. Tela "Disponibilidade" e endpoints para listar, cadastrar, editar e excluir blocos próprios |
 | Hora de fim maior que hora de início | Pronto. Validado na tela, na API, no Domain e por CHECK no banco |
 | Blocos do mesmo dia não podem se sobrepor | Pronto. A API rejeita interseções no mesmo dia; blocos adjacentes são permitidos |
+
+## US09 - Ver alerta de sobrecarga (Sprint 5)
+
+| Critério | Situação |
+|---|---|
+| Comparar a soma estimada das tarefas abertas com os blocos livres de um período | Pronto. Compara tarefas abertas com prazo na semana atual (segunda a domingo) com os blocos semanais da US08 |
+| Exibir alerta quando tarefas passam o tempo livre | Pronto. O alerta aparece no topo de "Minhas tarefas" somente quando há sobrecarga |
+| Informar quantas horas passam do tempo livre | Pronto. Mostra o excesso em horas e minutos, além dos totais estimado e livre |

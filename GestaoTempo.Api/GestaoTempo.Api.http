@@ -5,6 +5,7 @@
 # Testes 17 a 26 (US04 - categorias) e 27 a 34 (US05 - editar e excluir): rode na ordem, um usa o id do outro.
 # Testes 35 a 53 (US06 - subtarefas e US07 - status): rode na ordem, a partir do 35.
 # Testes 54 a 60 (US08 - disponibilidade): rode na ordem; alguns reutilizam o bloco criado no 55.
+# Teste 61 (US09 - sobrecarga semanal): compara a carga aberta da semana com os blocos livres.
 @usuario = 1
 
 ### A. US01 - Criar conta (esperado: 201)
@@ -642,6 +643,10 @@ X-Usuario-Id: {{usuario}}
 
 ### 54. US08 - Listar blocos de disponibilidade (esperado: 200)
 GET {{host}}/api/disponibilidades
+X-Usuario-Id: {{usuario}}
+
+### 61. US09 - Resumo de sobrecarga da semana atual (esperado: 200)
+GET {{host}}/api/tarefas/sobrecarga-semana
 X-Usuario-Id: {{usuario}}
 
 ### 55. US08 - Criar bloco na segunda-feira (esperado: 201)

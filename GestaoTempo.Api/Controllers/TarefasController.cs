@@ -243,6 +243,39 @@ public class TarefasController : ControllerAutenticado
         return tarefa;
     }
 
+    // US09 - Compara as tarefas principais abertas com os blocos semanais de tempo livre.
+    [HttpGet("sobrecarga-semana")]
+    public async Task<ActionResult<SobrecargaSemanaResponse>> SobrecargaDaSemana()
+    {
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
+
+        var hoje = DateOnly.FromDateTime(DateTime.Now);
+        var diasDesdeSegunda = ((int)hoje.DayOfWeek + 6) % 7;
+        var inicioSemana = hoje.AddDays(-diasDesdeSegunda);
+        var fimSemana = inicioSemana.AddDays(6);
+        var inicioLocal = inicioSemana.ToDateTime(TimeOnly.MinValue, DateTimeKind.Local);
+        var fimExclusivoLocal = inicioSemana.AddDays(7).ToDateTime(TimeOnly.MinValue, DateTimeKind.Local);
+
+        var tempoEstimadoMin = await _db.Tarefas
+            .Where(t => t.UsuarioId == usuarioId
+                && t.TarefaPaiId == null
+                && (t.Status == StatusTarefa.Pendente || t.Status == StatusTarefa.EmAndamento)
+                && t.Prazo >= inicioLocal && t.Prazo < fimExclusivoLocal)
+            .SumAsync(t => (int?)t.EstimativaMin) ?? 0;
+
+        // Os blocos da US08 se repetem semanalmente; somar todos dá a disponibilidade desta semana.
+        var blocos = await _db.Disponibilidades
+            .Where(d => d.UsuarioId == usuarioId)
+            .Select(d => new { d.HoraInicio, d.HoraFim })
+            .ToListAsync();
+        var tempoLivreMin = blocos.Sum(b => (int)(b.HoraFim - b.HoraInicio).TotalMinutes);
+        var sobrecargaMin = Math.Max(0, tempoEstimadoMin - tempoLivreMin);
+
+        return new SobrecargaSemanaResponse(
+            inicioSemana, fimSemana, tempoEstimadoMin, tempoLivreMin, sobrecargaMin);
+    }
+
     // Lista as tarefas do usuário, para conferir o que foi cadastrado.
     [HttpGet]
     public async Task<ActionResult<List<TarefaResponse>>> Listar()
