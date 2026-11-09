@@ -645,10 +645,6 @@ X-Usuario-Id: {{usuario}}
 GET {{host}}/api/disponibilidades
 X-Usuario-Id: {{usuario}}
 
-### 61. US09 - Resumo de sobrecarga da semana atual (esperado: 200)
-GET {{host}}/api/tarefas/sobrecarga-semana
-X-Usuario-Id: {{usuario}}
-
 ### 55. US08 - Criar bloco na segunda-feira (esperado: 201)
 # @name blocoDisponibilidade
 POST {{host}}/api/disponibilidades
@@ -700,4 +696,8 @@ X-Usuario-Id: {{usuario}}
 
 ### 60. US08 - Confirmar que a lista continua acessível (esperado: 200)
 GET {{host}}/api/disponibilidades
+X-Usuario-Id: {{usuario}}
+
+### 61. US09 - Resumo de sobrecarga da semana atual (esperado: 200)
+GET {{host}}/api/tarefas/sobrecarga-semana
 X-Usuario-Id: {{usuario}}
