@@ -6,6 +6,7 @@ import CriarContaView from './views/CriarContaView.vue'
 import TarefasView from './views/TarefasView.vue'
 import NovaTarefaView from './views/NovaTarefaView.vue'
 import CategoriasView from './views/CategoriasView.vue'
+import DisponibilidadeView from './views/DisponibilidadeView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -18,6 +19,7 @@ export const router = createRouter({
     // A mesma tela do cadastro abre em modo edição quando recebe o id (US05).
     { path: '/tarefas/:id(\\d+)', name: 'editar-tarefa', component: NovaTarefaView, props: true },
     { path: '/categorias', name: 'categorias', component: CategoriasView },
+    { path: '/disponibilidade', name: 'disponibilidade', component: DisponibilidadeView },
     { path: '/:pathMatch(.*)*', redirect: '/tarefas' },
   ],
 })

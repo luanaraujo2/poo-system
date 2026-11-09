@@ -4,6 +4,7 @@
 # Os prazos são relativos a hoje. Rode os testes 2 e 7 antes do 12 ao 16, que usam os ids que eles devolvem.
 # Testes 17 a 26 (US04 - categorias) e 27 a 34 (US05 - editar e excluir): rode na ordem, um usa o id do outro.
 # Testes 35 a 53 (US06 - subtarefas e US07 - status): rode na ordem, a partir do 35.
+# Testes 54 a 60 (US08 - disponibilidade): rode na ordem; alguns reutilizam o bloco criado no 55.
 @usuario = 1
 
 ### A. US01 - Criar conta (esperado: 201)
@@ -637,4 +638,61 @@ X-Usuario-Id: {{usuario}}
 
 ### 53. US06 - Vincular a tarefa avulsa: 50 + 20 > 60 (esperado: 400 "As subtarefas ultrapassam a estimativa da tarefa.")
 POST {{host}}/api/tarefas/{{us06Pai2.response.body.id}}/subtarefas/{{us06Avulsa.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 54. US08 - Listar blocos de disponibilidade (esperado: 200)
+GET {{host}}/api/disponibilidades
+X-Usuario-Id: {{usuario}}
+
+### 55. US08 - Criar bloco na segunda-feira (esperado: 201)
+# @name blocoDisponibilidade
+POST {{host}}/api/disponibilidades
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "diaSemana": "Segunda",
+  "horaInicio": "09:00:00",
+  "horaFim": "12:00:00"
+}
+
+### 56. US08 - Rejeitar sobreposição no mesmo dia (esperado: 409)
+POST {{host}}/api/disponibilidades
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "diaSemana": "Segunda",
+  "horaInicio": "11:00:00",
+  "horaFim": "13:00:00"
+}
+
+### 57. US08 - Rejeitar fim anterior ao início (esperado: 400)
+POST {{host}}/api/disponibilidades
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "diaSemana": "Terca",
+  "horaInicio": "15:00:00",
+  "horaFim": "14:00:00"
+}
+
+### 58. US08 - Editar bloco (esperado: 200)
+PUT {{host}}/api/disponibilidades/{{blocoDisponibilidade.response.body.id}}
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "diaSemana": "Terca",
+  "horaInicio": "09:00:00",
+  "horaFim": "12:00:00"
+}
+
+### 59. US08 - Excluir bloco (esperado: 204)
+DELETE {{host}}/api/disponibilidades/{{blocoDisponibilidade.response.body.id}}
+X-Usuario-Id: {{usuario}}
+
+### 60. US08 - Confirmar que a lista continua acessível (esperado: 200)
+GET {{host}}/api/disponibilidades
 X-Usuario-Id: {{usuario}}

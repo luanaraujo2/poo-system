@@ -21,11 +21,17 @@ Projeto FullStack para um melhor aproveitamento do seu tempo.
 | US06 | Dividir tarefa em subtarefas | Pronta: "Adicionar subtarefa" na tela da tarefa; a soma das subtarefas aparece junto da estimativa |
 | US07 | Atualizar status | Pronta: status no topo da tela da tarefa; ao concluir, grava data, hora e tempo real; filtro de status na lista |
 
+## Escopo da Sprint 5
+
+| US | História | Situação |
+|---|---|---|
+| US08 | Informar disponibilidade | Pronta: cadastrar, editar e excluir blocos semanais; horários válidos e sem sobreposição no mesmo dia |
+
 ## Documentação
 
 | Arquivo | Conteúdo |
 |---|---|
-| [docs/historias.md](docs/historias.md) | Critérios de aceite das US01 a US07 e quem fez cada parte |
+| [docs/historias.md](docs/historias.md) | Critérios de aceite das US01 a US08 e quem fez cada parte |
 | [docs/api.md](docs/api.md) | Endpoints, exemplos de requisição e resposta, regras e erros |
 | [docs/banco.md](docs/banco.md) | Tabelas, decisões do banco e migrations |
 | [docs/banco.sql](docs/banco.sql) | Script SQL do esquema, para entrega e consulta |
@@ -46,16 +52,16 @@ Projeto FullStack para um melhor aproveitamento do seu tempo.
 ```
 SGT.slnx
 GestaoTempo.Domain/            regras de negócio, sem dependência de banco
-  Entities/                    Usuario, Categoria, Tarefa
-  Enums/                       StatusTarefa, Criticidade, Complexidade, Prioridade
+  Entities/                    Usuario, Categoria, Tarefa, Disponibilidade
+  Enums/                       StatusTarefa, Criticidade, Complexidade, Prioridade, DiaSemana
 GestaoTempo.Api/               API web
-  Controllers/                 Usuarios, Autenticacao, Tarefas, Categorias
+  Controllers/                 Usuarios, Autenticacao, Tarefas, Categorias, Disponibilidades
   Data/                        AppDbContext, DadosDeTeste, Migrations/
   Dtos/                        objetos de entrada e saída da API
   Services/                    UsuarioAtual, GeradorDeToken
   GestaoTempo.Api.http         testes manuais (extensão REST Client)
 frontend/                      telas em Vue + PrimeVue
-  src/views/                   EntrarView, CriarContaView, TarefasView, NovaTarefaView, CategoriasView
+  src/views/                   EntrarView, CriarContaView, TarefasView, NovaTarefaView, CategoriasView, DisponibilidadeView
   src/components/              StatusTarefa (US07) e SubtarefasTarefa (US06), usados na tela da tarefa
   src/servicos/                api.js (chamadas à API) e sessao.js (token do login)
 docs/                          documentação e script SQL
@@ -101,7 +107,7 @@ O `npm install` só é preciso na primeira vez. Abra `http://localhost:5173` e e
 
 ### Testar a API
 
-Abra `GestaoTempo.Api/GestaoTempo.Api.http` no VS Code (extensão REST Client) e clique em **Send Request** acima de cada teste. O resultado esperado está no título de cada um: A a G cobrem cadastro, login e token (US01 e US02), 1 a 12 cobrem as tarefas (US03), 13 a 16 cobrem as subtarefas, 17 a 26 cobrem as categorias (US04), 27 a 34 cobrem editar e excluir tarefa (US05) e 35 a 53 cobrem subtarefas e status (US06 e US07). Os prazos são relativos à data de hoje.
+Abra `GestaoTempo.Api/GestaoTempo.Api.http` no VS Code (extensão REST Client) e clique em **Send Request** acima de cada teste. O resultado esperado está no título de cada um: A a G cobrem cadastro, login e token (US01 e US02), 1 a 12 cobrem as tarefas (US03), 13 a 16 cobrem as subtarefas, 17 a 26 cobrem as categorias (US04), 27 a 34 cobrem editar e excluir tarefa (US05), 35 a 53 cobrem subtarefas e status (US06 e US07) e 54 a 60 cobrem disponibilidade (US08).
 
 Algo não funcionou? Veja [docs/problemas.md](docs/problemas.md).
 

@@ -13,6 +13,7 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 | Nova subtarefa | `/tarefas/nova?pai={id}` | US06 | `views/NovaTarefaView.vue` |
 | Editar tarefa (com Excluir) | `/tarefas/{id}` | US05 | `views/NovaTarefaView.vue`, em modo edição |
 | Categorias | `/categorias` | US04 | `views/CategoriasView.vue` |
+| Disponibilidade | `/disponibilidade` | US08 | `views/DisponibilidadeView.vue` |
 
 `/` e qualquer rota desconhecida levam para `/tarefas`. As telas de tarefas exigem login; quem já está logado e abre `/entrar` ou `/criar-conta` é levado para `/tarefas`.
 
@@ -27,6 +28,7 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 | `src/constantes.js` | Textos dos enums, cores de status e formatadores de duração e de prazo |
 | `src/components/StatusTarefa.vue` | Status da tarefa e diálogo do tempo real ao concluir (US07) |
 | `src/components/SubtarefasTarefa.vue` | Lista de subtarefas, soma das estimativas e botão "Adicionar subtarefa" (US06) |
+| `src/views/DisponibilidadeView.vue` | Cadastro, edição e exclusão dos blocos semanais de tempo livre (US08) |
 | `src/tema.js` | Preset do PrimeVue com o azul do protótipo |
 | `src/estilo.css` | Cores, coluna central e classes usadas em mais de uma tela |
 
@@ -70,6 +72,12 @@ Os erros de regra voltam da API como `{ "mensagem": "..." }` e a tela mostra ess
 - Ao escolher **Concluída**, a tela pergunta o tempo real gasto, já sugerindo a estimativa.
 - Tarefa concluída mostra a data da conclusão e o tempo real, e não muda mais de status.
 - Em "Minhas tarefas", o filtro separa **Abertas** (pendentes e em andamento), **Concluídas**, **Canceladas** e **Todas**.
+
+## Disponibilidade (US08)
+
+- Abre pelo botão **Disponibilidade** no topo de "Minhas tarefas".
+- Cada bloco informa um dia da semana, a hora de início e a hora de fim. A tela permite criar, editar e excluir blocos.
+- A API valida os horários e informa quando um bloco se sobrepõe a outro no mesmo dia.
 
 ## Comandos
 

@@ -1,6 +1,6 @@
 # Histórias
 
-Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07.
+Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07. Sprint 5: US08.
 
 ## Quem fez o quê
 
@@ -89,3 +89,11 @@ Feita por João Vitor: `PATCH /api/tarefas/{id}/status`, quadro de status, filtr
 | Marcar como Pendente, Em andamento, Concluída ou Cancelada | Pronto. Quadro "Status" no topo da tela da tarefa |
 | Ao concluir, grava data e hora da conclusão | Pronto (`concluidoEm`) |
 | Ao concluir, grava o tempo real gasto, informado pelo usuário | Pronto. A tela pergunta o tempo real, já sugerindo a estimativa (`tempoRealMin`) |
+
+## US08 - Informar disponibilidade (Sprint 5)
+
+| Critério | Situação |
+|---|---|
+| Cadastrar blocos de tempo livre por dia da semana, com início e fim | Pronto. Tela "Disponibilidade" e endpoints para listar, cadastrar, editar e excluir blocos próprios |
+| Hora de fim maior que hora de início | Pronto. Validado na tela, na API, no Domain e por CHECK no banco |
+| Blocos do mesmo dia não podem se sobrepor | Pronto. A API rejeita interseções no mesmo dia; blocos adjacentes são permitidos |
