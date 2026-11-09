@@ -17,6 +17,7 @@ Base: `http://localhost:5224`. Tudo em JSON, com campos em camelCase. Enums traf
 | DELETE | `/api/disponibilidades/{id}` | Exclui bloco do usuário (US08) | 204, 401, 404 |
 | POST | `/api/tarefas` | Cadastra tarefa (US03) | 201, 400, 401 |
 | GET | `/api/tarefas` | Lista as tarefas do usuário, por prazo | 200, 401 |
+| GET | `/api/tarefas/sobrecarga-semana` | Compara tarefas abertas e disponibilidade na semana atual (US09) | 200, 401 |
 | GET | `/api/tarefas/{id}` | Obtém uma tarefa do usuário | 200, 401, 404 |
 | PUT | `/api/tarefas/{id}` | Edita a tarefa (US05) | 200, 400, 401, 404 |
 | DELETE | `/api/tarefas/{id}` | Exclui a tarefa e as subtarefas dela (US05) | 204, 401, 404 |
@@ -162,6 +163,22 @@ Para criar uma tarefa já como subtarefa, mande `"tarefaPaiId": 1` no `POST /api
 
 Os dias aceitos são `Segunda`, `Terca`, `Quarta`, `Quinta`, `Sexta`, `Sabado` e `Domingo`. `GET /api/disponibilidades` lista os blocos do usuário, ordenados por dia e início. A hora de fim precisa ser posterior à hora de início. Horários que se cruzem no mesmo dia retornam 409; blocos encostados, como 09:00–10:00 e 10:00–11:00, são permitidos. A resposta inclui `id`, `diaSemana`, `horaInicio` e `horaFim`.
 
+## Alerta de sobrecarga (US09)
+
+`GET /api/tarefas/sobrecarga-semana` compara as tarefas abertas com prazo na semana atual (segunda a domingo) aos blocos semanais de disponibilidade do usuário. Subtarefas não são somadas separadamente porque a estimativa da tarefa principal já as inclui. Resposta:
+
+```json
+{
+  "inicioSemana": "2026-11-02",
+  "fimSemana": "2026-11-08",
+  "tempoEstimadoMin": 900,
+  "tempoLivreMin": 720,
+  "sobrecargaMin": 180
+}
+```
+
+Quando `sobrecargaMin` é maior que zero, a tela "Minhas tarefas" mostra o excesso em horas e minutos.
+
 ## Editar e excluir tarefa (US05)
 
 `PUT /api/tarefas/{id}` recebe os mesmos campos do cadastro e devolve a tarefa atualizada. O status não muda aqui (é pelo `PATCH .../status`, da US07), e `tarefaPaiId` é ignorado.
@@ -217,6 +234,11 @@ As regras de nome, e-mail, título, tempo estimado e prazo ficam nos construtore
 - A hora de fim deve ser posterior à hora de início.
 - Blocos do mesmo dia não podem se sobrepor para o mesmo usuário; horários adjacentes são aceitos.
 - Cada usuário lista e altera apenas os próprios blocos.
+
+**Sobrecarga (US09)**
+- Considera as tarefas principais em status `Pendente` ou `EmAndamento`, com prazo na semana atual.
+- Compara a soma estimada com os blocos semanais de disponibilidade do usuário.
+- A sobrecarga é a diferença positiva entre a estimativa e o tempo livre; sem excesso, vale zero.
 
 **Categoria (US04)**
 - Nome com pelo menos 3 e no máximo 50 caracteres, sem repetir outra categoria do usuário (sem diferenciar maiúsculas).

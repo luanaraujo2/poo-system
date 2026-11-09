@@ -26,6 +26,13 @@
     </header>
     <h1>Minhas tarefas</h1>
 
+    <Message v-if="sobrecarga && sobrecarga.sobrecargaMin > 0" severity="warn" :closable="false" class="alerta-sobrecarga">
+      Nesta semana, as tarefas abertas passam o tempo livre em
+      <strong>{{ formatarDuracao(sobrecarga.sobrecargaMin) }}</strong>.
+      Estimativa: {{ formatarDuracao(sobrecarga.tempoEstimadoMin) }}; tempo livre: {{ formatarDuracao(sobrecarga.tempoLivreMin) }}.
+    </Message>
+    <Message v-if="erroSobrecarga" severity="error" :closable="false">{{ erroSobrecarga }}</Message>
+
     <Message v-if="erro" severity="error" :closable="false">{{ erro }}</Message>
 
     <div v-if="carregando" class="carregando">
@@ -116,6 +123,8 @@ const tarefas = ref([])
 const categorias = ref([])
 const carregando = ref(true)
 const erro = ref('')
+const sobrecarga = ref(null)
+const erroSobrecarga = ref('')
 
 const primeiroNome = computed(() => sessao.usuario?.nome?.split(' ')[0] ?? '')
 
@@ -160,6 +169,12 @@ onMounted(async () => {
     erro.value = e.message
   } finally {
     carregando.value = false
+  }
+
+  try {
+    sobrecarga.value = await api('/tarefas/sobrecarga-semana')
+  } catch (e) {
+    erroSobrecarga.value = e.message
   }
 })
 </script>

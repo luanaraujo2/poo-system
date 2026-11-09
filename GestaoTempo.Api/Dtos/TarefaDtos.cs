@@ -37,6 +37,14 @@ public record TarefaResponse(
     int SubtarefasMin,
     int SubtarefasConcluidas);
 
+// US09 - Comparação da carga estimada com a disponibilidade da semana atual.
+public record SobrecargaSemanaResponse(
+    DateOnly InicioSemana,
+    DateOnly FimSemana,
+    int TempoEstimadoMin,
+    int TempoLivreMin,
+    int SobrecargaMin);
+
 // Tarefas = quantas tarefas usam a categoria (a tela de categorias mostra e pede para onde movê-las antes de excluir).
 public record CategoriaResponse(int Id, string Nome, string? Cor, bool Padrao, int Tarefas);
 
