@@ -6,25 +6,44 @@
   <main class="tela">
     <header class="topo">
       <span class="ola">Olá, {{ primeiroNome }}</span>
-      <div class="botoes-topo">
-        <Button
-          label="Categorias"
-          icon="pi pi-tags"
-          severity="secondary"
-          text
-          @click="router.push({ name: 'categorias' })"
-        />
-        <Button
-          label="Disponibilidade"
-          icon="pi pi-clock"
-          severity="secondary"
-          text
-          @click="router.push({ name: 'disponibilidade' })"
-        />
-        <Button label="Sair" icon="pi pi-sign-out" severity="secondary" text @click="sairDaConta" />
-      </div>
+      <Button label="Sair" icon="pi pi-sign-out" severity="secondary" text @click="sairDaConta" />
     </header>
     <h1>Minhas tarefas</h1>
+
+    <nav class="atalhos-nav" aria-label="Atalhos">
+      <Button
+        label="Planejamento"
+        icon="pi pi-calendar"
+        severity="secondary"
+        outlined
+        size="small"
+        @click="router.push({ name: 'planejamento' })"
+      />
+      <Button
+        label="Relatório"
+        icon="pi pi-chart-bar"
+        severity="secondary"
+        outlined
+        size="small"
+        @click="router.push({ name: 'relatorio' })"
+      />
+      <Button
+        label="Disponibilidade"
+        icon="pi pi-clock"
+        severity="secondary"
+        outlined
+        size="small"
+        @click="router.push({ name: 'disponibilidade' })"
+      />
+      <Button
+        label="Categorias"
+        icon="pi pi-tags"
+        severity="secondary"
+        outlined
+        size="small"
+        @click="router.push({ name: 'categorias' })"
+      />
+    </nav>
 
     <Message v-if="sobrecarga && sobrecarga.sobrecargaMin > 0" severity="warn" :closable="false" class="alerta-sobrecarga">
       Nesta semana, as tarefas abertas passam o tempo livre em
@@ -32,6 +51,27 @@
       Estimativa: {{ formatarDuracao(sobrecarga.tempoEstimadoMin) }}; tempo livre: {{ formatarDuracao(sobrecarga.tempoLivreMin) }}.
     </Message>
     <Message v-if="erroSobrecarga" severity="error" :closable="false">{{ erroSobrecarga }}</Message>
+
+    <!-- US13: lembretes das tarefas com prazo chegando. -->
+    <section v-if="lembretes.length" class="lembretes" aria-label="Lembretes">
+      <Message v-for="lembrete in lembretes" :key="lembrete.tarefaId" severity="info" :closable="false" class="lembrete">
+        <div class="conteudo-lembrete">
+          <span>
+            <i class="pi pi-bell" aria-hidden="true" />
+            <RouterLink :to="{ name: 'editar-tarefa', params: { id: lembrete.tarefaId } }">{{ lembrete.titulo }}</RouterLink>
+            vence {{ quandoVence(lembrete.prazo) }}.
+          </span>
+          <Button
+            label="Dispensar"
+            severity="secondary"
+            text
+            size="small"
+            :loading="dispensando === lembrete.tarefaId"
+            @click="dispensar(lembrete)"
+          />
+        </div>
+      </Message>
+    </section>
 
     <Message v-if="erro" severity="error" :closable="false">{{ erro }}</Message>
 
@@ -140,19 +180,21 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import SelectButton from 'primevue/selectbutton'
 import Tag from 'primevue/tag'
+import { useToast } from 'primevue/usetoast'
 
 import { api } from '../servicos/api'
 import { sair, sessao } from '../servicos/sessao'
 import { CRITICIDADES, PRIORIDADES, STATUS, corDoStatus, formatarDuracao, formatarPrazo, textoDe } from '../constantes'
 
 const router = useRouter()
+const toast = useToast()
 
 const tarefas = ref([])
 const categorias = ref([])
@@ -307,6 +349,48 @@ function sairDaConta() {
   router.push({ name: 'entrar' })
 }
 
+// US13: os lembretes são conferidos ao abrir a tela e a cada minuto.
+// Um lembrete que aparece com a tela aberta também vira um aviso (toast).
+const lembretes = ref([])
+const dispensando = ref(null)
+let temporizadorLembretes = null
+
+async function carregarLembretes() {
+  try {
+    const novos = await api('/tarefas/lembretes')
+    const jaMostrados = new Set(lembretes.value.map((l) => l.tarefaId))
+    if (temporizadorLembretes) {
+      for (const lembrete of novos.filter((l) => !jaMostrados.has(l.tarefaId))) {
+        toast.add({ severity: 'info', summary: 'Lembrete', detail: `${lembrete.titulo} vence ${quandoVence(lembrete.prazo)}.`, life: 8000 })
+      }
+    }
+    lembretes.value = novos
+  } catch {
+    // Sem lembretes nesta conferência; tenta de novo no próximo minuto.
+  }
+}
+
+async function dispensar(lembrete) {
+  dispensando.value = lembrete.tarefaId
+  try {
+    await api(`/tarefas/${lembrete.tarefaId}/lembrete/dispensar`, { metodo: 'POST' })
+    lembretes.value = lembretes.value.filter((l) => l.tarefaId !== lembrete.tarefaId)
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'Lembrete', detail: e.message, life: 4000 })
+  } finally {
+    dispensando.value = null
+  }
+}
+
+function quandoVence(prazo) {
+  const minutos = Math.max(0, Math.round((new Date(prazo) - new Date()) / 60000))
+  if (minutos < 1) return 'em menos de 1min'
+  if (minutos < 24 * 60) return `em ${formatarDuracao(minutos)}`
+  return `em ${formatarPrazo(prazo)}`
+}
+
+onUnmounted(() => clearInterval(temporizadorLembretes))
+
 onMounted(async () => {
   let tarefasCarregadas = false
   try {
@@ -333,6 +417,9 @@ onMounted(async () => {
   } catch (e) {
     erroSobrecarga.value = e.message
   }
+
+  await carregarLembretes()
+  temporizadorLembretes = setInterval(carregarLembretes, 60000)
 })
 </script>
 
@@ -350,14 +437,54 @@ onMounted(async () => {
 }
 
 h1 {
-  margin: 0 0 20px;
+  margin: 0 0 12px;
   font-size: 26px;
+}
+
+.atalhos-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.atalhos-nav :deep(.p-button) {
+  justify-content: center;
+  background: #fff;
 }
 
 .filtro {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 14px;
+}
+
+.lembretes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.lembrete {
+  margin: 0;
+}
+
+.conteudo-lembrete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.conteudo-lembrete .pi {
+  margin-right: 4px;
+}
+
+.conteudo-lembrete a {
+  font-weight: 600;
+  color: inherit;
 }
 
 .controles-ordem {
@@ -468,12 +595,6 @@ h1 {
 .cartao:focus-visible {
   outline: 2px solid var(--sgt-azul);
   outline-offset: 2px;
-}
-
-.botoes-topo {
-  display: flex;
-  gap: 2px;
-  margin-right: -10px;
 }
 
 .linha-titulo {

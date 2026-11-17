@@ -9,6 +9,9 @@ public class Tarefa
     public Tarefa? TarefaPai { get; private set; }
     private readonly List<Tarefa> _subtarefas = new List<Tarefa>();
     public IReadOnlyCollection<Tarefa> Subtarefas => _subtarefas.AsReadOnly();
+    // US12 - histórico das mudanças de status.
+    private readonly List<HistoricoStatus> _historico = new List<HistoricoStatus>();
+    public IReadOnlyCollection<HistoricoStatus> Historico => _historico.AsReadOnly();
     public string Titulo {get; private set;}
     public string Descricao {get; private set;}
     public DateTime Prazo {get; private set;}
@@ -20,6 +23,12 @@ public class Tarefa
     public StatusTarefa Status {get; private set;}
     public DateTime CriadoEm {get; private set;}
     public DateTime? ConcluidoEm {get; private set;}
+
+    // US13 - Lembrete: quantos minutos antes do prazo avisar. Sem valor, a tarefa fica sem lembrete.
+    public const int LembretePadraoMin = 24 * 60;
+    public const int LembreteMaximoMin = 30 * 24 * 60;
+    public int? LembreteMin { get; private set; }
+    public DateTime? LembreteDispensadoEm { get; private set; }
 
     public Tarefa(string titulo, string descricao, DateTime prazo, int estimativaMin, Criticidade criticidade, Complexidade complexidade, Prioridade prioridade, int usuarioId, int categoriaId)
     {
@@ -41,6 +50,8 @@ public class Tarefa
         
         Status = StatusTarefa.Pendente;
         CriadoEm = DateTime.Now;
+        LembreteMin = LembretePadraoMin;
+        _historico.Add(new HistoricoStatus(null, StatusTarefa.Pendente));
     }
 
     // Usado só pelo banco (EF Core) ao ler uma tarefa já gravada.
@@ -66,7 +77,11 @@ public class Tarefa
         Titulo = titulo;
         Descricao = descricao;
         if (prazoMudou)
+        {
             Prazo = prazo;
+            // Prazo novo, lembrete novo (US13).
+            LembreteDispensadoEm = null;
+        }
         EstimativaMin = estimativaMin;
         Criticidade = criticidade;
         Complexidade = complexidade;
@@ -91,6 +106,9 @@ public class Tarefa
         {
             throw new InvalidOperationException("Não é possível concluir a tarefa enquanto houver subtarefas pendentes.");
         }
+        // US12: só registra quando o status muda de verdade.
+        if (status != Status)
+            _historico.Add(new HistoricoStatus(Status, status));
         Status = status;
         if (Status == StatusTarefa.Concluida)
         {
@@ -162,5 +180,60 @@ public class Tarefa
     public bool PodeConcluir()
     {
         return _subtarefas.All(sub => sub.Status == StatusTarefa.Concluida);
+    }
+
+    public bool EstaAberta()
+    {
+        return Status == StatusTarefa.Pendente || Status == StatusTarefa.EmAndamento;
+    }
+
+    // US14 - Entregue no prazo: concluída até o momento do prazo.
+    public bool ConcluidaNoPrazo()
+    {
+        return Status == StatusTarefa.Concluida
+            && ConcluidoEm is DateTime concluidoEm
+            && concluidoEm.ToUniversalTime() <= Prazo.ToUniversalTime();
+    }
+
+    // US14 - Atrasada: concluída depois do prazo, ou ainda aberta com o prazo vencido.
+    // As datas lidas do banco voltam em UTC, por isso a comparação é feita em UTC.
+    public bool EntregueComAtraso(DateTime agora)
+    {
+        if (Status == StatusTarefa.Concluida)
+            return !ConcluidaNoPrazo();
+        return EstaAberta() && agora.ToUniversalTime() > Prazo.ToUniversalTime();
+    }
+
+    // US13 - Define quantos minutos antes do prazo o usuário quer ser lembrado (null = sem lembrete).
+    public void DefinirLembrete(int? minutosAntes)
+    {
+        if (minutosAntes is int minutos && (minutos <= 0 || minutos > LembreteMaximoMin))
+            throw new ArgumentException("O lembrete deve ser de 1 minuto a 30 dias antes do prazo.");
+        if (minutosAntes != LembreteMin)
+            LembreteDispensadoEm = null;
+        LembreteMin = minutosAntes;
+    }
+
+    public DateTime? MomentoDoLembrete()
+    {
+        return LembreteMin is int minutos ? Prazo.AddMinutes(-minutos) : null;
+    }
+
+    // US13 - O lembrete aparece entre o momento configurado e o prazo.
+    // Tarefa concluída ou cancelada não recebe lembrete.
+    public bool DeveLembrar(DateTime agora)
+    {
+        if (LembreteMin is not int minutos || LembreteDispensadoEm is not null || !EstaAberta())
+            return false;
+        var agoraUtc = agora.ToUniversalTime();
+        var prazoUtc = Prazo.ToUniversalTime();
+        return agoraUtc >= prazoUtc.AddMinutes(-minutos) && agoraUtc < prazoUtc;
+    }
+
+    public void DispensarLembrete()
+    {
+        if (!DeveLembrar(DateTime.Now))
+            throw new InvalidOperationException("Esta tarefa não tem lembrete para dispensar agora.");
+        LembreteDispensadoEm = DateTime.Now;
     }
 }

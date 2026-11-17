@@ -1,6 +1,6 @@
 # Histórias
 
-Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07. Sprint 5: US08 a US10.
+Sprint 3: US01, US02 e US03. Sprint 4: US04 a US07. Sprint 5: US08 a US10. Sprint 6: US11 a US14.
 
 ## Quem fez o quê
 
@@ -123,3 +123,35 @@ Feita por João Vitor: `PATCH /api/tarefas/{id}/status`, quadro de status, filtr
 - **Complexidade (0 a 10)**: Baixa = 0, Média = 5, Alta = 10.
 
 Tarefas atrasadas permanecem no topo também no modo manual; a ordem manual pode ser alterada dentro dos grupos de atrasadas e não atrasadas.
+
+## US11 - Gerar planejamento da semana (Sprint 6)
+
+| Critério | Situação |
+|---|---|
+| Distribuir as tarefas nos blocos de tempo livre da semana | Pronto. `POST /api/planejamento/gerar` e tela "Planejamento semanal" distribuem as tarefas principais abertas nos blocos da US08 |
+| Nenhuma tarefa colocada depois do prazo | Pronto. `PlanejadorSemanal` valida o fim previsto do bloco contra o prazo da tarefa na geração e ao mover |
+| Tarefas que não couberem em lista "sem espaço" | Pronto. Tarefas não alocadas ficam na seção "Sem espaço" com o motivo |
+| Permitir mover uma tarefa para outro bloco | Pronto. `PATCH /api/planejamento/tarefas/{id}` e diálogo "Mover tarefa" na tela |
+
+## US12 - Consultar histórico (Sprint 6)
+
+| Critério | Situação |
+|---|---|
+| Toda mudança de status registrada com data e hora | Pronto. `HistoricoStatus` gravado no cadastro e em toda alteração real em `Tarefa.AlterarStatus` |
+| Ver o histórico de cada tarefa para entender onde travou | Pronto. `GET /api/tarefas/{id}/historico` e quadro "Histórico" em "Editar tarefa", destacando o status em que ficou mais tempo |
+
+## US13 - Receber lembretes (Sprint 6)
+
+| Critério | Situação |
+|---|---|
+| Configurar lembrete antes do prazo | Pronto. Campo "Lembrete" no cadastro e na edição da tarefa (`lembreteMin` na API) |
+| Padrão de 24 horas antes e editável | Pronto. Nasce com 1440 minutos (24h) e aceita atalhos, valor personalizado ou sem lembrete |
+| Tarefa concluída ou cancelada não recebe lembrete | Pronto. Validado em `Tarefa.DeveLembrar` e na consulta `GET /api/tarefas/lembretes` |
+
+## US14 - Ver relatório de desempenho (Sprint 6)
+
+| Critério | Situação |
+|---|---|
+| Tarefas entregues no prazo e atrasadas | Pronto. `GET /api/relatorios/desempenho` e seção "Prazos e entregas" na tela "Relatório de desempenho" |
+| Tempo estimado comparado com o tempo real gasto | Pronto. Comparação total e por tarefa concluída |
+| Distribuição das tarefas por categoria | Pronto. Barra proporcional e totais por categoria |

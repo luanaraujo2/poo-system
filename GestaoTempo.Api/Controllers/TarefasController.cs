@@ -64,10 +64,11 @@ public class TarefasController : ControllerAutenticado
                 req.Prioridade!.Value,
                 usuarioId,
                 categoria.Id);
+            tarefa.DefinirLembrete(req.LembreteMin);
         }
         catch (ArgumentException ex)
         {
-            // Regras da classe Tarefa: título, tempo estimado e prazo.
+            // Regras da classe Tarefa: título, tempo estimado, prazo e lembrete.
             return BadRequest(new ErroResponse(ex.Message));
         }
 
@@ -124,6 +125,7 @@ public class TarefasController : ControllerAutenticado
                 req.Complexidade!.Value,
                 req.Prioridade!.Value);
             tarefa.TrocarCategoria(req.CategoriaId);
+            tarefa.DefinirLembrete(req.LembreteMin);
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
@@ -200,6 +202,14 @@ public class TarefasController : ControllerAutenticado
             return BadRequest(new ErroResponse(ex.Message));
         }
 
+        if (!tarefa.EstaAberta())
+        {
+            var itensPlanejados = await _db.PlanejamentoItens
+                .Where(p => p.TarefaId == id && p.UsuarioId == usuarioId)
+                .ToListAsync();
+            _db.PlanejamentoItens.RemoveRange(itensPlanejados);
+        }
+
         await _db.SaveChangesAsync();
         return await Consultar(usuarioId, id).FirstAsync();
     }
@@ -222,6 +232,73 @@ public class TarefasController : ControllerAutenticado
         try
         {
             pai.AdicionarSubtarefa(filha);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ErroResponse(ex.Message));
+        }
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // US12 - Histórico de status da tarefa, do registro mais antigo para o mais novo.
+    [HttpGet("{id:int}/historico")]
+    public async Task<ActionResult<List<HistoricoStatusResponse>>> Historico(int id)
+    {
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
+
+        var existe = await _db.Tarefas.AnyAsync(t => t.Id == id && t.UsuarioId == usuarioId);
+        if (!existe)
+            return NotFound(new ErroResponse("Tarefa não encontrada."));
+
+        return await _db.HistoricosStatus
+            .Where(h => h.TarefaId == id)
+            .OrderBy(h => h.AlteradoEm)
+            .ThenBy(h => h.Id)
+            .Select(h => new HistoricoStatusResponse(h.StatusAnterior, h.StatusNovo, h.AlteradoEm))
+            .ToListAsync();
+    }
+
+    // US13 - Lembretes valendo agora: tarefas abertas cujo prazo está dentro da antecedência escolhida.
+    [HttpGet("lembretes")]
+    public async Task<ActionResult<List<LembreteResponse>>> Lembretes()
+    {
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
+
+        var agora = DateTime.Now;
+        var candidatas = await _db.Tarefas
+            .Where(t => t.UsuarioId == usuarioId
+                && t.LembreteMin != null
+                && t.LembreteDispensadoEm == null
+                && (t.Status == StatusTarefa.Pendente || t.Status == StatusTarefa.EmAndamento)
+                && t.Prazo > agora)
+            .ToListAsync();
+
+        // A regra de quando lembrar fica na classe Tarefa.
+        return candidatas
+            .Where(t => t.DeveLembrar(agora))
+            .OrderBy(t => t.Prazo)
+            .Select(t => new LembreteResponse(t.Id, t.Titulo, t.Prazo, t.LembreteMin!.Value, t.MomentoDoLembrete()!.Value))
+            .ToList();
+    }
+
+    // US13 - Dispensa o lembrete da tarefa. Se o prazo ou a antecedência mudarem, ele volta a valer.
+    [HttpPost("{id:int}/lembrete/dispensar")]
+    public async Task<IActionResult> DispensarLembrete(int id)
+    {
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
+
+        var tarefa = await _db.Tarefas.FirstOrDefaultAsync(t => t.Id == id && t.UsuarioId == usuarioId);
+        if (tarefa is null)
+            return NotFound(new ErroResponse("Tarefa não encontrada."));
+
+        try
+        {
+            tarefa.DispensarLembrete();
         }
         catch (InvalidOperationException ex)
         {
@@ -318,5 +395,6 @@ public class TarefasController : ControllerAutenticado
             t.Subtarefas.Select(sub => sub.Id).ToList(),
             t.TarefaPaiId, t.ConcluidoEm, t.TempoRealMin,
             t.Subtarefas.Sum(sub => sub.EstimativaMin),
-            t.Subtarefas.Count(sub => sub.Status == StatusTarefa.Concluida));
+            t.Subtarefas.Count(sub => sub.Status == StatusTarefa.Concluida),
+            t.LembreteMin);
 }

@@ -8,12 +8,14 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 |---|---|---|---|
 | Entrar | `/entrar` | US02 | `views/EntrarView.vue` |
 | Criar conta | `/criar-conta` | US01 | `views/CriarContaView.vue` |
-| Minhas tarefas (lista, alertas, filtro de status, Categorias e Sair) | `/tarefas` | US02, US03, US05, US06, US07, US09 e US10 | `views/TarefasView.vue` |
-| Nova tarefa | `/tarefas/nova` | US03 | `views/NovaTarefaView.vue` |
+| Minhas tarefas (lista, alertas, lembretes, filtro de status e atalhos) | `/tarefas` | US02, US03, US05, US06, US07, US09, US10 e US13 | `views/TarefasView.vue` |
+| Nova tarefa | `/tarefas/nova` | US03 e US13 | `views/NovaTarefaView.vue` |
 | Nova subtarefa | `/tarefas/nova?pai={id}` | US06 | `views/NovaTarefaView.vue` |
-| Editar tarefa (com Excluir) | `/tarefas/{id}` | US05 | `views/NovaTarefaView.vue`, em modo edição |
+| Editar tarefa (com Excluir e Histórico) | `/tarefas/{id}` | US05 e US12 | `views/NovaTarefaView.vue`, em modo edição |
 | Categorias | `/categorias` | US04 | `views/CategoriasView.vue` |
 | Disponibilidade | `/disponibilidade` | US08 | `views/DisponibilidadeView.vue` |
+| Planejamento semanal | `/planejamento` | US11 | `views/PlanejamentoView.vue` |
+| Relatório de desempenho | `/relatorio` | US14 | `views/RelatorioView.vue` |
 
 `/` e qualquer rota desconhecida levam para `/tarefas`. As telas de tarefas exigem login; quem já está logado e abre `/entrar` ou `/criar-conta` é levado para `/tarefas`.
 
@@ -28,8 +30,11 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 | `src/constantes.js` | Textos dos enums, cores de status e formatadores de duração e de prazo |
 | `src/components/StatusTarefa.vue` | Status da tarefa e diálogo do tempo real ao concluir (US07) |
 | `src/components/SubtarefasTarefa.vue` | Lista de subtarefas, soma das estimativas e botão "Adicionar subtarefa" (US06) |
+| `src/components/HistoricoTarefa.vue` | Linha do tempo de mudanças de status e tempo em cada etapa (US12) |
 | `src/views/DisponibilidadeView.vue` | Cadastro, edição e exclusão dos blocos semanais de tempo livre (US08) |
-| `src/views/TarefasView.vue` | Lista, filtros, alerta de sobrecarga (US09) e sugestão de ordem (US10) |
+| `src/views/PlanejamentoView.vue` | Geração do planejamento semanal, lista "sem espaço" e mover tarefa entre blocos (US11) |
+| `src/views/RelatorioView.vue` | Relatório de prazos, tempo estimado × real e distribuição por categoria (US14) |
+| `src/views/TarefasView.vue` | Lista, filtros, alerta de sobrecarga (US09), ordem (US10) e lembretes (US13) |
 | `src/tema.js` | Preset do PrimeVue com o azul do protótipo |
 | `src/estilo.css` | Cores, coluna central e classes usadas em mais de uma tela |
 
@@ -91,6 +96,27 @@ Os erros de regra voltam da API como `{ "mensagem": "..." }` e a tela mostra ess
 - A lista começa em **Sugestão**, ordenada por pontuação de prazo, criticidade, prioridade e complexidade. A pontuação aparece em cada cartão.
 - Tarefas abertas atrasadas aparecem no topo e ficam destacadas em vermelho.
 - Em **Manual**, os controles de seta reordenam as tarefas. A escolha fica salva no navegador para cada usuário; tarefas atrasadas continuam agrupadas no topo.
+
+## Planejamento semanal (US11)
+
+- Abre pelo botão **Planejamento** em "Minhas tarefas". Permite alternar entre a semana atual e a próxima.
+- O botão **Gerar planejamento** distribui as tarefas abertas nos blocos da US08 sem ultrapassar o prazo de nenhuma tarefa.
+- Tarefas que não couberem antes do prazo ficam na seção **Sem espaço**, com o motivo.
+- O botão **Mover** (ou **Alocar**, para itens sem espaço) permite trocar a tarefa de bloco ou retirá-la do bloco, respeitando espaço livre e prazo.
+
+## Histórico de status (US12)
+
+- Na tela "Editar tarefa", o quadro **Histórico** mostra a linha do tempo de cada mudança de status com data e hora, além do tempo gasto em cada etapa e onde a tarefa ficou parada por mais tempo.
+
+## Lembretes (US13)
+
+- Na tela "Nova tarefa" / "Editar tarefa", o campo **Lembrete** vem marcado por padrão em **24h antes** e permite escolher outras antecedências, digitar um tempo personalizado ou desativar ("Sem lembrete").
+- Em "Minhas tarefas", os lembretes ativos aparecem no topo com link para a tarefa e botão **Dispensar**, atualizados a cada minuto. Tarefas concluídas ou canceladas não recebem lembrete.
+
+## Relatório de desempenho (US14)
+
+- Abre pelo botão **Relatório** em "Minhas tarefas".
+- Exibe os indicadores de entregas no prazo e atrasadas (concluídas e abertas), a comparação do tempo estimado com o tempo real gasto (geral e por tarefa concluída) e a distribuição das tarefas por categoria.
 
 ## Comandos
 

@@ -7,6 +7,8 @@ import TarefasView from './views/TarefasView.vue'
 import NovaTarefaView from './views/NovaTarefaView.vue'
 import CategoriasView from './views/CategoriasView.vue'
 import DisponibilidadeView from './views/DisponibilidadeView.vue'
+import PlanejamentoView from './views/PlanejamentoView.vue'
+import RelatorioView from './views/RelatorioView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -20,6 +22,8 @@ export const router = createRouter({
     { path: '/tarefas/:id(\\d+)', name: 'editar-tarefa', component: NovaTarefaView, props: true },
     { path: '/categorias', name: 'categorias', component: CategoriasView },
     { path: '/disponibilidade', name: 'disponibilidade', component: DisponibilidadeView },
+    { path: '/planejamento', name: 'planejamento', component: PlanejamentoView },
+    { path: '/relatorio', name: 'relatorio', component: RelatorioView },
     { path: '/:pathMatch(.*)*', redirect: '/tarefas' },
   ],
 })

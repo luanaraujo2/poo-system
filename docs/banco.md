@@ -10,8 +10,10 @@ O script [banco.sql](banco.sql) é uma cópia legível do esquema, para entrega 
 |---|---|
 | `usuario` | `id_usuario`, `nome`, `email` (único, `citext`), `senha_hash`, `criado_em` |
 | `categoria` | `id_categoria`, `id_usuario`, `nome`, `cor`, `padrao` |
-| `tarefa` | `id_tarefa`, `id_usuario`, `id_categoria`, `id_tarefa_pai`, `titulo`, `descricao`, `prazo`, `estimativa_min`, `tempo_real_min`, `criticidade`, `complexidade`, `prioridade`, `status`, `criada_em`, `concluida_em` |
+| `tarefa` | `id_tarefa`, `id_usuario`, `id_categoria`, `id_tarefa_pai`, `titulo`, `descricao`, `prazo`, `estimativa_min`, `tempo_real_min`, `criticidade`, `complexidade`, `prioridade`, `status`, `criada_em`, `concluida_em`, `lembrete_min`, `lembrete_dispensado_em` |
 | `disponibilidade` | `id_disponibilidade`, `id_usuario`, `dia_semana`, `hora_inicio`, `hora_fim` |
+| `historico_status` | `id_historico`, `id_tarefa`, `status_anterior`, `status_novo`, `alterado_em` |
+| `planejamento_item` | `id_planejamento_item`, `id_usuario`, `semana_inicio`, `id_tarefa`, `id_disponibilidade`, `data`, `hora_inicio`, `hora_fim`, `ordem` |
 
 Relações:
 
@@ -19,6 +21,8 @@ Relações:
 - `tarefa.id_categoria` aponta para `categoria` (não dá para apagar uma categoria em uso).
 - `tarefa.id_tarefa_pai` aponta para outra tarefa (subtarefa). A chave estrangeira é composta, `(id_tarefa_pai, id_usuario)`, o que impede que pai e filha sejam de usuários diferentes.
 - `disponibilidade.id_usuario` aponta para o usuário dono dos blocos; apagar o usuário apaga suas disponibilidades.
+- `historico_status.id_tarefa` aponta para a tarefa; apagar a tarefa apaga seu histórico.
+- `planejamento_item` aponta para `usuario`, `tarefa` e `disponibilidade` com remoção em cascata caso algum deles seja excluído.
 
 Os enums são gravados como texto.
 
@@ -36,6 +40,8 @@ Os enums são gravados como texto.
 | `CriacaoInicial` | João Vitor | `usuario`, `categoria` e `tarefa` |
 | `PersistirSubtarefas` | Luan | coluna e constraints de subtarefa |
 | `CadastrarDisponibilidade` | US08 | tabela de blocos semanais, vínculo ao usuário e validação do intervalo |
+| `RegistrarHistoricoELembretes` | Sprint 6 | tabela `historico_status`, colunas de lembrete em `tarefa` e carga inicial para tarefas existentes |
+| `AdicionarPlanejamentoSemanal` | Sprint 6 | tabela `planejamento_item`, índice único por semana/tarefa e constraints de horário e ordem |
 
 ## Decisões
 
@@ -48,6 +54,9 @@ Os enums são gravados como texto.
 - **Sessão**: não há tabela de sessão. O login usa token, então "sair" é só descartar o token no front.
 - **Dados de teste**: só em Development, a API cria `teste@sgt.local` (senha `12345678`) com as 5 categorias, se não houver nenhum usuário.
 - **Disponibilidade (US08)**: horários são armazenados como `time without time zone`; a API impede sobreposição para o mesmo usuário e dia. O banco garante fim posterior ao início.
+- **Histórico (US12)**: cada alteração real de status (e o cadastro inicial como `Pendente`) grava um registro em `historico_status`.
+- **Lembretes (US13)**: `lembrete_min` aceita de 1 a 43200 minutos (30 dias) antes do prazo ou `NULL` para tarefas sem lembrete; `lembrete_dispensado_em` registra quando o usuário dispensou o aviso.
+- **Planejamento semanal (US11)**: `planejamento_item` garante que cada tarefa apareça no máximo uma vez na semana (`semana_inicio`, segunda-feira), mantendo dia e intervalo previstos dentro do bloco.
 
 ## Migrations
 

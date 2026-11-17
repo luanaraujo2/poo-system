@@ -29,6 +29,29 @@ export const STATUS = {
 // US07: opções do campo Status, na ordem em que aparecem.
 export const STATUS_OPCOES = Object.entries(STATUS).map(([valor, texto]) => ({ valor, texto }))
 
+// US13: antecedência do lembrete, em minutos antes do prazo. null = sem lembrete.
+export const LEMBRETE_PADRAO_MIN = 24 * 60
+export const OPCOES_LEMBRETE = [
+  { valor: null, texto: 'Sem lembrete' },
+  { valor: 30, texto: '30min antes' },
+  { valor: 60, texto: '1h antes' },
+  { valor: 3 * 60, texto: '3h antes' },
+  { valor: 12 * 60, texto: '12h antes' },
+  { valor: LEMBRETE_PADRAO_MIN, texto: '24h antes' },
+  { valor: 2 * 24 * 60, texto: '2 dias antes' },
+  { valor: 7 * 24 * 60, texto: '1 semana antes' },
+]
+
+export const DIAS_SEMANA = {
+  Segunda: 'Segunda-feira',
+  Terca: 'Terça-feira',
+  Quarta: 'Quarta-feira',
+  Quinta: 'Quinta-feira',
+  Sexta: 'Sexta-feira',
+  Sabado: 'Sábado',
+  Domingo: 'Domingo',
+}
+
 // Cor da etiqueta de status (severity do Tag do PrimeVue).
 export function corDoStatus(status) {
   return { Pendente: 'secondary', EmAndamento: 'info', Concluida: 'success', Cancelada: 'contrast' }[status]
@@ -53,4 +76,9 @@ export function formatarPrazo(iso) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+export function formatarDataCurta(dataIso) {
+  const [ano, mes, dia] = dataIso.split('-')
+  return `${dia}/${mes}`
 }

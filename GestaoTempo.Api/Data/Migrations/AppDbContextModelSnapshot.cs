@@ -99,6 +99,106 @@ namespace GestaoTempo.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GestaoTempo.Domain.Entities.HistoricoStatus", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id_historico");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("StatusAnterior")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_anterior");
+
+                    b.Property<string>("StatusNovo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_novo");
+
+                    b.Property<int>("TarefaId")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_tarefa");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TarefaId", "AlteradoEm");
+
+                    b.ToTable("historico_status", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_historico_status_anterior_valido", "status_anterior IS NULL OR status_anterior IN ('Pendente', 'EmAndamento', 'Concluida', 'Cancelada')");
+
+                            t.HasCheckConstraint("CK_historico_status_novo_valido", "status_novo IN ('Pendente', 'EmAndamento', 'Concluida', 'Cancelada')");
+                        });
+                });
+
+            modelBuilder.Entity("GestaoTempo.Domain.Entities.PlanejamentoItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id_planejamento_item");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("Data")
+                        .HasColumnType("date")
+                        .HasColumnName("data");
+
+                    b.Property<int>("DisponibilidadeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_disponibilidade");
+
+                    b.Property<TimeOnly>("HoraFim")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("hora_fim");
+
+                    b.Property<TimeOnly>("HoraInicio")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("hora_inicio");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.Property<DateOnly>("SemanaInicio")
+                        .HasColumnType("date")
+                        .HasColumnName("semana_inicio");
+
+                    b.Property<int>("TarefaId")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_tarefa");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_usuario");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DisponibilidadeId");
+
+                    b.HasIndex("TarefaId");
+
+                    b.HasIndex("UsuarioId", "SemanaInicio", "TarefaId")
+                        .IsUnique();
+
+                    b.HasIndex("UsuarioId", "SemanaInicio", "DisponibilidadeId", "Ordem");
+
+                    b.ToTable("planejamento_item", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_planejamento_horario_valido", "hora_fim > hora_inicio");
+
+                            t.HasCheckConstraint("CK_planejamento_ordem_nao_negativa", "ordem >= 0");
+                        });
+                });
+
             modelBuilder.Entity("GestaoTempo.Domain.Entities.Tarefa", b =>
                 {
                     b.Property<int>("Id")
@@ -139,6 +239,14 @@ namespace GestaoTempo.Api.Data.Migrations
                     b.Property<int>("EstimativaMin")
                         .HasColumnType("integer")
                         .HasColumnName("estimativa_min");
+
+                    b.Property<DateTime?>("LembreteDispensadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lembrete_dispensado_em");
+
+                    b.Property<int?>("LembreteMin")
+                        .HasColumnType("integer")
+                        .HasColumnName("lembrete_min");
 
                     b.Property<DateTime>("Prazo")
                         .HasColumnType("timestamp with time zone")
@@ -191,6 +299,8 @@ namespace GestaoTempo.Api.Data.Migrations
                             t.HasCheckConstraint("CK_tarefa_criticidade_valida", "criticidade IN ('Baixa', 'Media', 'Alta', 'Critica')");
 
                             t.HasCheckConstraint("CK_tarefa_estimativa_positiva", "estimativa_min > 0");
+
+                            t.HasCheckConstraint("CK_tarefa_lembrete_valido", "lembrete_min IS NULL OR lembrete_min BETWEEN 1 AND 43200");
 
                             t.HasCheckConstraint("CK_tarefa_nao_pode_ser_pai_de_si_mesma", "id_tarefa_pai IS NULL OR id_tarefa_pai <> id_tarefa");
 
@@ -261,6 +371,36 @@ namespace GestaoTempo.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("GestaoTempo.Domain.Entities.HistoricoStatus", b =>
+                {
+                    b.HasOne("GestaoTempo.Domain.Entities.Tarefa", null)
+                        .WithMany("Historico")
+                        .HasForeignKey("TarefaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GestaoTempo.Domain.Entities.PlanejamentoItem", b =>
+                {
+                    b.HasOne("GestaoTempo.Domain.Entities.Disponibilidade", null)
+                        .WithMany()
+                        .HasForeignKey("DisponibilidadeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GestaoTempo.Domain.Entities.Tarefa", null)
+                        .WithMany()
+                        .HasForeignKey("TarefaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GestaoTempo.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("GestaoTempo.Domain.Entities.Tarefa", b =>
                 {
                     b.HasOne("Categoria", null)
@@ -286,6 +426,8 @@ namespace GestaoTempo.Api.Data.Migrations
 
             modelBuilder.Entity("GestaoTempo.Domain.Entities.Tarefa", b =>
                 {
+                    b.Navigation("Historico");
+
                     b.Navigation("Subtarefas");
                 });
 

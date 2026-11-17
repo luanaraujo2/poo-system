@@ -6,6 +6,7 @@
 # Testes 35 a 53 (US06 - subtarefas e US07 - status): rode na ordem, a partir do 35.
 # Testes 54 a 60 (US08 - disponibilidade): rode na ordem; alguns reutilizam o bloco criado no 55.
 # Teste 61 (US09 - sobrecarga semanal): compara a carga aberta da semana com os blocos livres.
+# Testes 62 a 73 (US11 a US14): planejamento, histórico, lembretes e relatório de desempenho.
 @usuario = 1
 
 ### A. US01 - Criar conta (esperado: 201)
@@ -700,4 +701,100 @@ X-Usuario-Id: {{usuario}}
 
 ### 60. US08 - Confirmar que a lista continua acessível (esperado: 200)
 GET {{host}}/api/disponibilidades
+X-Usuario-Id: {{usuario}}
+
+### 62. US12 - Histórico da tarefa do teste 35 (esperado: 200, cadastro e conclusão)
+GET {{host}}/api/tarefas/{{us06Pai.response.body.id}}/historico
+X-Usuario-Id: {{usuario}}
+
+### 63. US13 - Cadastrar tarefa com prazo em 2 horas e lembrete padrão de 24h (esperado: 201)
+# @name tarefaLembrete
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Revisar entrega da sprint",
+  "prazo": "{{$datetime iso8601 2 h}}",
+  "estimativaMin": 30,
+  "categoriaId": 2,
+  "criticidade": "Alta",
+  "complexidade": "Media",
+  "prioridade": "Urgente_Importante"
+}
+
+### 64. US13 - Listar lembretes ativos (esperado: 200 com a tarefa do teste 63)
+GET {{host}}/api/tarefas/lembretes
+X-Usuario-Id: {{usuario}}
+
+### 65. US13 - Dispensar o lembrete da tarefa do teste 63 (esperado: 204)
+POST {{host}}/api/tarefas/{{tarefaLembrete.response.body.id}}/lembrete/dispensar
+X-Usuario-Id: {{usuario}}
+
+### 66. US13 - Cadastrar tarefa sem lembrete (esperado: 201, "lembreteMin": null)
+POST {{host}}/api/tarefas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "titulo": "Tarefa sem aviso",
+  "prazo": "{{$datetime iso8601 2 h}}",
+  "estimativaMin": 30,
+  "categoriaId": 3,
+  "criticidade": "Baixa",
+  "complexidade": "Baixa",
+  "prioridade": "NaoUrgente_NaoImportante",
+  "lembreteMin": null
+}
+
+### 67. US11 - Criar bloco para testar planejamento (esperado: 201)
+# @name blocoPlanejamento
+POST {{host}}/api/disponibilidades
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "diaSemana": "Sexta",
+  "horaInicio": "09:00:00",
+  "horaFim": "12:00:00"
+}
+
+### 68. US11 - Criar segundo bloco para mover tarefa (esperado: 201)
+# @name blocoDestino
+POST {{host}}/api/disponibilidades
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "diaSemana": "Sabado",
+  "horaInicio": "14:00:00",
+  "horaFim": "18:00:00"
+}
+
+### 69. US11 - Gerar planejamento da semana (esperado: 200)
+POST {{host}}/api/planejamento/gerar
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{}
+
+### 70. US11 - Consultar planejamento salvo (esperado: 200)
+GET {{host}}/api/planejamento
+X-Usuario-Id: {{usuario}}
+
+### 71. US11 - Mover tarefa do teste 52 para o bloco de sábado (esperado: 200 ou 400 se passar do prazo)
+PATCH {{host}}/api/planejamento/tarefas/{{us06Avulsa.response.body.id}}
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "disponibilidadeId": {{blocoDestino.response.body.id}}
+}
+
+### 72. US14 - Ver relatório de desempenho (esperado: 200)
+GET {{host}}/api/relatorios/desempenho
+X-Usuario-Id: {{usuario}}
+
+### 73. US11 - Limpar blocos criados no teste (esperado: 204)
+DELETE {{host}}/api/disponibilidades/{{blocoPlanejamento.response.body.id}}
 X-Usuario-Id: {{usuario}}
