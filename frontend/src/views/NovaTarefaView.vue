@@ -155,6 +155,39 @@
           class="grade grade-2"
         />
       </div>
+
+      <div class="campo">
+        <span id="rotulo-lembrete" class="rotulo">Lembrete</span>
+        <div class="atalhos" role="radiogroup" aria-labelledby="rotulo-lembrete">
+          <button
+            v-for="opcao in OPCOES_LEMBRETE"
+            :key="String(opcao.valor)"
+            type="button"
+            role="radio"
+            :aria-checked="!lembretePersonalizado && lembreteMin === opcao.valor"
+            :class="['chip', { selecionado: !lembretePersonalizado && lembreteMin === opcao.valor }]"
+            @click="selecionarLembretePadrao(opcao.valor)"
+          >
+            {{ opcao.texto }}
+          </button>
+          <button
+            type="button"
+            role="radio"
+            :aria-checked="lembretePersonalizado"
+            :class="['chip', { selecionado: lembretePersonalizado }]"
+            @click="ativarLembretePersonalizado"
+          >
+            Outro
+          </button>
+        </div>
+        <div v-if="lembretePersonalizado" class="tempo">
+          <InputNumber v-model="lembreteHoras" :min="0" :max="720" input-class="numero" placeholder="0" aria-label="Horas de antecedência do lembrete" />
+          <span class="dica">h</span>
+          <InputNumber v-model="lembreteMinutos" :min="0" :max="59" input-class="numero" placeholder="0" aria-label="Minutos de antecedência do lembrete" />
+          <span class="dica">min antes</span>
+        </div>
+        <span class="dica">Avisa em "Minhas tarefas" antes do prazo. Tarefa concluída ou cancelada não recebe lembrete.</span>
+      </div>
     </form>
 
     <div v-show="!carregandoTarefa" class="acoes">
@@ -164,6 +197,7 @@
     <span v-if="!modoEdicao" class="dica rodape">* campos obrigatórios. A tarefa começa como Pendente.</span>
 
     <SubtarefasTarefa v-if="modoEdicao && tarefaOriginal && !carregandoTarefa" :tarefa="tarefaOriginal" class="bloco" />
+    <HistoricoTarefa v-if="modoEdicao && tarefaOriginal && !carregandoTarefa" :tarefa="tarefaOriginal" class="bloco" />
     <Button
       v-if="modoEdicao && !carregandoTarefa && tarefaOriginal"
       label="Excluir tarefa"
@@ -209,10 +243,11 @@ import SelectButton from 'primevue/selectbutton'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 
+import HistoricoTarefa from '../components/HistoricoTarefa.vue'
 import StatusTarefa from '../components/StatusTarefa.vue'
 import SubtarefasTarefa from '../components/SubtarefasTarefa.vue'
 import { api } from '../servicos/api'
-import { COMPLEXIDADES, CRITICIDADES, PRIORIDADES, formatarDuracao } from '../constantes'
+import { COMPLEXIDADES, CRITICIDADES, LEMBRETE_PADRAO_MIN, OPCOES_LEMBRETE, PRIORIDADES, formatarDuracao } from '../constantes'
 
 // id vem da rota /tarefas/:id; sem id, a tela é o cadastro.
 const props = defineProps({ id: { type: String, default: null } })
@@ -279,6 +314,26 @@ const minutos = ref(null)
 const criticidade = ref(null)
 const complexidade = ref(null)
 const prioridade = ref(null)
+// US13: começa com o lembrete padrão de 24 horas antes do prazo.
+const lembreteMin = ref(LEMBRETE_PADRAO_MIN)
+const lembretePersonalizado = ref(false)
+const lembreteHoras = ref(null)
+const lembreteMinutos = ref(null)
+
+const lembretePersonalizadoTotal = computed(() => (lembreteHoras.value ?? 0) * 60 + (lembreteMinutos.value ?? 0))
+const lembreteParaEnviar = computed(() => (lembretePersonalizado.value ? lembretePersonalizadoTotal.value : lembreteMin.value))
+
+function selecionarLembretePadrao(valor) {
+  lembretePersonalizado.value = false
+  lembreteMin.value = valor
+}
+
+function ativarLembretePersonalizado() {
+  lembretePersonalizado.value = true
+  const base = lembreteMin.value ?? 60
+  lembreteHoras.value = Math.floor(base / 60)
+  lembreteMinutos.value = base % 60
+}
 
 const erro = ref('')
 const salvando = ref(false)
@@ -352,6 +407,16 @@ function preencher(tarefa) {
   criticidade.value = tarefa.criticidade
   complexidade.value = tarefa.complexidade
   prioridade.value = tarefa.prioridade
+  const valorLembrete = tarefa.lembreteMin ?? null
+  const estaNasOpcoes = OPCOES_LEMBRETE.some((o) => o.valor === valorLembrete)
+  if (estaNasOpcoes) {
+    lembretePersonalizado.value = false
+    lembreteMin.value = valorLembrete
+  } else {
+    lembretePersonalizado.value = true
+    lembreteHoras.value = Math.floor(valorLembrete / 60)
+    lembreteMinutos.value = valorLembrete % 60
+  }
 }
 
 // Campo de hora: aceita só números e coloca os dois-pontos sozinho (1800 vira 18:00).
@@ -385,6 +450,10 @@ function conferir() {
   if (!criticidade.value) return 'Informe a criticidade.'
   if (!complexidade.value) return 'Informe a complexidade.'
   if (!prioridade.value) return 'Informe a prioridade.'
+  if (lembretePersonalizado.value) {
+    if (lembretePersonalizadoTotal.value <= 0) return 'Informe a antecedência do lembrete.'
+    if (lembretePersonalizadoTotal.value > 30 * 24 * 60) return 'O lembrete deve ser no máximo 30 dias antes do prazo.'
+  }
   return ''
 }
 
@@ -409,6 +478,7 @@ async function salvar() {
         complexidade: complexidade.value,
         prioridade: prioridade.value,
         tarefaPaiId: paiId.value,
+        lembreteMin: lembreteParaEnviar.value,
       },
     })
     const resumo = modoEdicao.value ? 'Tarefa atualizada' : paiId.value ? 'Subtarefa cadastrada' : 'Tarefa cadastrada'

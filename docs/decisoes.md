@@ -20,6 +20,11 @@
 - **Mesma mensagem no login.** "E-mail ou senha inválidos." para e-mail inexistente e senha errada, para não revelar quais e-mails têm conta.
 - **Cabeçalho `X-Usuario-Id`.** Só funciona em Development, para os testes do `.http` sem precisar do token.
 
+- **Histórico de status (US12).** Toda alteração real de status (além do cadastro inicial como `Pendente`) é registrada pela própria `Tarefa` em `historico_status`. Editar dados da tarefa não gera registro de histórico.
+- **Lembretes (US13).** A configuração é por tarefa (`lembrete_min`, padrão de 24 horas) e os lembretes vencendo aparecem no topo de "Minhas tarefas", com atualização periódica. Tarefas concluídas ou canceladas não recebem lembretes.
+- **Planejamento semanal (US11).** Distribui as tarefas principais abertas em ordem de prazo e pontuação nos blocos livres da semana, sem alocar nenhuma tarefa após o prazo dela, e permite mover tarefas entre blocos ou para a lista "sem espaço".
+- **Relatório de desempenho (US14).** Considera apenas as tarefas principais para evitar contagem dupla de tempos e quantidades com as subtarefas.
+
 ## Pendências
 
 ### A combinar com o Luan (Domain)
@@ -30,5 +35,4 @@
 
 ### Fora do escopo desta sprint
 
-- Histórico das mudanças de status (US12).
-- Projeto de testes automatizados (hoje os testes são manuais, pelo `.http`).
+- Projeto de testes automatizados (os testes da API ficam documentados no `.http`).

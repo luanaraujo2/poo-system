@@ -13,6 +13,8 @@ public class AppDbContext : DbContext
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<Tarefa> Tarefas => Set<Tarefa>();
     public DbSet<Disponibilidade> Disponibilidades => Set<Disponibilidade>();
+    public DbSet<HistoricoStatus> HistoricosStatus => Set<HistoricoStatus>();
+    public DbSet<PlanejamentoItem> PlanejamentoItens => Set<PlanejamentoItem>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -96,6 +98,8 @@ public class AppDbContext : DbContext
                     "complexidade IN ('Baixa', 'Media', 'Alta')");
                 t.HasCheckConstraint("CK_tarefa_prioridade_valida",
                     "prioridade IN ('Urgente_Importante', 'Importante_NaoUrgente', 'Urgente_NaoImportante', 'NaoUrgente_NaoImportante')");
+                t.HasCheckConstraint("CK_tarefa_lembrete_valido",
+                    "lembrete_min IS NULL OR lembrete_min BETWEEN 1 AND 43200");
             });
             e.HasKey(t => t.Id);
             e.HasAlternateKey(t => new { t.Id, t.UsuarioId });
@@ -115,6 +119,9 @@ public class AppDbContext : DbContext
             e.Property(t => t.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(20);
             e.Property(t => t.CriadoEm).HasColumnName("criada_em");
             e.Property(t => t.ConcluidoEm).HasColumnName("concluida_em");
+            // US13 - lembrete antes do prazo (null = sem lembrete).
+            e.Property(t => t.LembreteMin).HasColumnName("lembrete_min");
+            e.Property(t => t.LembreteDispensadoEm).HasColumnName("lembrete_dispensado_em");
 
             // Listagens e filtros do usuário por status e por prazo.
             e.HasIndex(t => new { t.UsuarioId, t.Status });
@@ -136,6 +143,69 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(t => t.CategoriaId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // US12 - os registros de histórico são apagados junto com a tarefa.
+            e.HasMany(t => t.Historico)
+                .WithOne()
+                .HasForeignKey(h => h.TarefaId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(t => t.Historico).UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<HistoricoStatus>(e =>
+        {
+            e.ToTable("historico_status", t =>
+            {
+                t.HasCheckConstraint("CK_historico_status_novo_valido",
+                    "status_novo IN ('Pendente', 'EmAndamento', 'Concluida', 'Cancelada')");
+                t.HasCheckConstraint("CK_historico_status_anterior_valido",
+                    "status_anterior IS NULL OR status_anterior IN ('Pendente', 'EmAndamento', 'Concluida', 'Cancelada')");
+            });
+            e.HasKey(h => h.Id);
+            e.Property(h => h.Id).HasColumnName("id_historico");
+            e.Property(h => h.TarefaId).HasColumnName("id_tarefa");
+            e.Property(h => h.StatusAnterior).HasColumnName("status_anterior").HasConversion<string>().HasMaxLength(20);
+            e.Property(h => h.StatusNovo).HasColumnName("status_novo").HasConversion<string>().HasMaxLength(20);
+            e.Property(h => h.AlteradoEm).HasColumnName("alterado_em");
+            e.HasIndex(h => new { h.TarefaId, h.AlteradoEm });
+        });
+
+        modelBuilder.Entity<PlanejamentoItem>(e =>
+        {
+            e.ToTable("planejamento_item", t =>
+            {
+                t.HasCheckConstraint("CK_planejamento_horario_valido", "hora_fim > hora_inicio");
+                t.HasCheckConstraint("CK_planejamento_ordem_nao_negativa", "ordem >= 0");
+            });
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Id).HasColumnName("id_planejamento_item");
+            e.Property(p => p.UsuarioId).HasColumnName("id_usuario");
+            e.Property(p => p.SemanaInicio).HasColumnName("semana_inicio");
+            e.Property(p => p.TarefaId).HasColumnName("id_tarefa");
+            e.Property(p => p.DisponibilidadeId).HasColumnName("id_disponibilidade");
+            e.Property(p => p.Data).HasColumnName("data");
+            e.Property(p => p.HoraInicio).HasColumnName("hora_inicio");
+            e.Property(p => p.HoraFim).HasColumnName("hora_fim");
+            e.Property(p => p.Ordem).HasColumnName("ordem");
+
+            // Uma tarefa aparece no máximo uma vez no planejamento da mesma semana.
+            e.HasIndex(p => new { p.UsuarioId, p.SemanaInicio, p.TarefaId }).IsUnique();
+            e.HasIndex(p => new { p.UsuarioId, p.SemanaInicio, p.DisponibilidadeId, p.Ordem });
+
+            e.HasOne<Usuario>()
+                .WithMany()
+                .HasForeignKey(p => p.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne<Tarefa>()
+                .WithMany()
+                .HasForeignKey(p => p.TarefaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne<Disponibilidade>()
+                .WithMany()
+                .HasForeignKey(p => p.DisponibilidadeId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

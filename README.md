@@ -29,11 +29,20 @@ Projeto FullStack para um melhor aproveitamento do seu tempo.
 | US09 | Ver alerta de sobrecarga | Pronta: compara tarefas abertas e tempo livre da semana atual; alerta informa o excesso |
 | US10 | Receber sugestão de ordem de execução | Pronta: pontua prazo, criticidade, prioridade e complexidade; destaca atrasadas e permite ordem manual |
 
+## Escopo da Sprint 6
+
+| US | História | Situação |
+|---|---|---|
+| US11 | Gerar planejamento da semana | Pronta: distribui as tarefas abertas nos blocos da semana sem ultrapassar o prazo, lista as que ficam "sem espaço" e permite mover entre blocos |
+| US12 | Consultar histórico | Pronta: registra toda mudança de status com data e hora e exibe a linha do tempo na tela da tarefa |
+| US13 | Receber lembretes | Pronta: padrão de 24 horas antes do prazo, editável por tarefa; concluída ou cancelada não recebe lembrete |
+| US14 | Ver relatório de desempenho | Pronta: entregas no prazo × atrasadas, tempo estimado × tempo real e distribuição por categoria |
+
 ## Documentação
 
 | Arquivo | Conteúdo |
 |---|---|
-| [docs/historias.md](docs/historias.md) | Critérios de aceite das US01 a US10 e quem fez cada parte |
+| [docs/historias.md](docs/historias.md) | Critérios de aceite das US01 a US14 e quem fez cada parte |
 | [docs/api.md](docs/api.md) | Endpoints, exemplos de requisição e resposta, regras e erros |
 | [docs/banco.md](docs/banco.md) | Tabelas, decisões do banco e migrations |
 | [docs/banco.sql](docs/banco.sql) | Script SQL do esquema, para entrega e consulta |
@@ -54,17 +63,18 @@ Projeto FullStack para um melhor aproveitamento do seu tempo.
 ```
 SGT.slnx
 GestaoTempo.Domain/            regras de negócio, sem dependência de banco
-  Entities/                    Usuario, Categoria, Tarefa, Disponibilidade
+  Entities/                    Usuario, Categoria, Tarefa, Disponibilidade, HistoricoStatus, PlanejamentoItem
   Enums/                       StatusTarefa, Criticidade, Complexidade, Prioridade, DiaSemana
+  Services/                    PlanejadorSemanal (US11)
 GestaoTempo.Api/               API web
-  Controllers/                 Usuarios, Autenticacao, Tarefas, Categorias, Disponibilidades
+  Controllers/                 Usuarios, Autenticacao, Tarefas, Categorias, Disponibilidades, Planejamento, Relatorios
   Data/                        AppDbContext, DadosDeTeste, Migrations/
   Dtos/                        objetos de entrada e saída da API
   Services/                    UsuarioAtual, GeradorDeToken
   GestaoTempo.Api.http         testes manuais (extensão REST Client)
 frontend/                      telas em Vue + PrimeVue
-  src/views/                   EntrarView, CriarContaView, TarefasView, NovaTarefaView, CategoriasView, DisponibilidadeView
-  src/components/              StatusTarefa (US07) e SubtarefasTarefa (US06), usados na tela da tarefa
+  src/views/                   EntrarView, CriarContaView, TarefasView, NovaTarefaView, CategoriasView, DisponibilidadeView, PlanejamentoView, RelatorioView
+  src/components/              StatusTarefa (US07), SubtarefasTarefa (US06) e HistoricoTarefa (US12), usados na tela da tarefa
   src/servicos/                api.js (chamadas à API) e sessao.js (token do login)
 docs/                          documentação e script SQL
 docker-compose.yml             PostgreSQL local (opcional)
@@ -109,7 +119,7 @@ O `npm install` só é preciso na primeira vez. Abra `http://localhost:5173` e e
 
 ### Testar a API
 
-Abra `GestaoTempo.Api/GestaoTempo.Api.http` no VS Code (extensão REST Client) e clique em **Send Request** acima de cada teste. O resultado esperado está no título de cada um: A a G cobrem cadastro, login e token (US01 e US02), 1 a 12 cobrem as tarefas (US03), 13 a 16 cobrem as subtarefas, 17 a 26 cobrem as categorias (US04), 27 a 34 cobrem editar e excluir tarefa (US05), 35 a 53 cobrem subtarefas e status (US06 e US07), 54 a 60 cobrem disponibilidade (US08) e 61 cobre o alerta semanal (US09).
+Abra `GestaoTempo.Api/GestaoTempo.Api.http` no VS Code (extensão REST Client) e clique em **Send Request** acima de cada teste. O resultado esperado está no título de cada um: A a G cobrem cadastro, login e token (US01 e US02), 1 a 12 cobrem as tarefas (US03), 13 a 16 cobrem as subtarefas, 17 a 26 cobrem as categorias (US04), 27 a 34 cobrem editar e excluir tarefa (US05), 35 a 53 cobrem subtarefas e status (US06 e US07), 54 a 60 cobrem disponibilidade (US08), 61 cobre o alerta semanal (US09) e 62 a 73 cobrem planejamento, histórico, lembretes e relatório (US11 a US14).
 
 Algo não funcionou? Veja [docs/problemas.md](docs/problemas.md).
 

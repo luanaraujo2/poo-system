@@ -23,6 +23,13 @@ Base: `http://localhost:5224`. Tudo em JSON, com campos em camelCase. Enums traf
 | DELETE | `/api/tarefas/{id}` | Exclui a tarefa e as subtarefas dela (US05) | 204, 401, 404 |
 | PATCH | `/api/tarefas/{id}/status` | Muda o status; para concluir, informa o tempo real (US07) | 200, 400, 401, 404 |
 | POST | `/api/tarefas/{idPai}/subtarefas/{idFilha}` | Vincula uma tarefa já cadastrada como subtarefa (US06) | 204, 400, 401, 404 |
+| GET | `/api/tarefas/{id}/historico` | Lista as mudanças de status da tarefa, com data e hora (US12) | 200, 401, 404 |
+| GET | `/api/tarefas/lembretes` | Lista os lembretes ativos antes do prazo (US13) | 200, 401 |
+| POST | `/api/tarefas/{id}/lembrete/dispensar` | Dispensa o lembrete ativo da tarefa (US13) | 204, 400, 401, 404 |
+| GET | `/api/planejamento` | Consulta o planejamento salvo da semana e a lista "sem espaço" (US11) | 200, 401 |
+| POST | `/api/planejamento/gerar` | Distribui as tarefas abertas nos blocos da semana, antes do prazo (US11) | 200, 401 |
+| PATCH | `/api/planejamento/tarefas/{id}` | Move uma tarefa para outro bloco ou tira do bloco (US11) | 200, 400, 401, 404 |
+| GET | `/api/relatorios/desempenho` | Relatório de prazos, tempo estimado × real e categorias (US14) | 200, 401 |
 
 Com exceção de criar conta e entrar, todas as rotas pedem `Authorization: Bearer <token>`. Só em Development, os testes do `.http` aceitam o cabeçalho `X-Usuario-Id: 1` no lugar do token.
 
@@ -125,7 +132,8 @@ Resposta 201 (a mesma forma vale para `GET /api/tarefas` e `GET /api/tarefas/{id
   "concluidoEm": null,
   "tempoRealMin": 0,
   "subtarefasMin": 0,
-  "subtarefasConcluidas": 0
+  "subtarefasConcluidas": 0,
+  "lembreteMin": 1440
 }
 ```
 
@@ -136,6 +144,7 @@ Resposta 201 (a mesma forma vale para `GET /api/tarefas` e `GET /api/tarefas/{id
 | `subtarefasMin` | Soma das estimativas das subtarefas (US06) |
 | `subtarefasConcluidas` | Quantas subtarefas estão concluídas (US06) |
 | `concluidoEm` e `tempoRealMin` | Data e hora da conclusão e tempo real gasto, gravados ao concluir (US07) |
+| `lembreteMin` | Minutos antes do prazo para lembrar; padrão `1440` (24 horas), `null` sem lembrete (US13) |
 
 ## Subtarefas (US06)
 
@@ -178,6 +187,29 @@ Os dias aceitos são `Segunda`, `Terca`, `Quarta`, `Quinta`, `Sexta`, `Sabado` e
 ```
 
 Quando `sobrecargaMin` é maior que zero, a tela "Minhas tarefas" mostra o excesso em horas e minutos.
+
+## Planejamento semanal (US11)
+
+- `GET /api/planejamento?semanaInicio=2026-11-16`: devolve o planejamento da semana da data informada (ou a semana atual, se omitida), com `blocos` e `semEspaco`.
+- `POST /api/planejamento/gerar`: distribui as tarefas principais abertas nos blocos disponíveis da semana sem colocar nenhuma tarefa depois do prazo dela.
+- `PATCH /api/planejamento/tarefas/{id}`: move a tarefa para outro bloco informando `{ "disponibilidadeId": 5, "semanaInicio": "2026-11-16" }` (ou `null` para tirar do bloco e levar para "sem espaço"). Rejeita com 400 se o bloco já passou, se não tiver espaço livre ou se a tarefa terminaria depois do prazo.
+
+## Histórico de status (US12)
+
+`GET /api/tarefas/{id}/historico` lista, em ordem cronológica, todas as mudanças de status da tarefa (`statusAnterior`, `statusNovo` e `alteradoEm`). No cadastro inicial, `statusAnterior` vem nulo.
+
+## Lembretes (US13)
+
+- `lembreteMin` pode ser enviado no `POST /api/tarefas` e no `PUT /api/tarefas/{id}` (1 a 43200 minutos antes do prazo, ou `null` para desativar). Se não for informado, assume o padrão de `1440` (24 horas).
+- `GET /api/tarefas/lembretes` devolve as tarefas abertas (`Pendente` ou `EmAndamento`) cujo prazo está dentro da antecedência configurada e ainda não foi dispensado. Tarefas concluídas ou canceladas nunca aparecem.
+- `POST /api/tarefas/{id}/lembrete/dispensar` dispensa o lembrete até que o prazo ou a antecedência sejam alterados.
+
+## Relatório de desempenho (US14)
+
+`GET /api/relatorios/desempenho` devolve:
+- `prazos`: totais de tarefas entregues no prazo, entregues atrasadas, abertas no prazo, abertas atrasadas, canceladas e taxa de pontualidade;
+- `tempoResumo` e `tempoPorTarefa`: comparação entre o tempo estimado e o tempo real gasto das tarefas principais concluídas;
+- `porCategoria`: distribuição de tarefas, status e tempos por categoria.
 
 ## Editar e excluir tarefa (US05)
 
@@ -227,7 +259,16 @@ As regras de nome, e-mail, título, tempo estimado e prazo ficam nos construtore
 - Para concluir, o tempo real gasto é obrigatório e maior que zero. A data e a hora da conclusão são gravadas sozinhas.
 - A tarefa principal só é concluída quando todas as subtarefas estão concluídas.
 - Tarefa concluída não muda mais de status (regra da classe `Tarefa`).
-- O registro das mudanças no histórico fica para a US12.
+- Toda alteração real de status (e o cadastro inicial) fica registrada em `historico_status` (US12).
+
+**Planejamento semanal (US11)**
+- Considera as tarefas principais em status `Pendente` ou `EmAndamento`.
+- Nenhuma tarefa é alocada ou movida para um horário posterior ao próprio prazo ou para um bloco que já encerrou.
+- Tarefas que não couberem em nenhum bloco antes do prazo aparecem em `semEspaco` com o motivo.
+
+**Lembretes (US13)**
+- Antecedência entre 1 minuto e 30 dias (43200 minutos), ou `null` para desativar; padrão de 24 horas (1440 minutos).
+- Tarefas concluídas, canceladas ou já vencidas não entram na lista de lembretes.
 
 **Disponibilidade (US08)**
 - Dia da semana, hora de início e hora de fim são obrigatórios; o dia precisa ser válido.
