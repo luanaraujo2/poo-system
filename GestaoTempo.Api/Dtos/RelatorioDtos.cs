@@ -45,4 +45,6 @@ public record RelatorioDesempenhoResponse(
     ResumoPrazosResponse Prazos,
     ComparacaoTempoResumoResponse TempoResumo,
     IReadOnlyList<ComparacaoTempoTarefaResponse> TempoPorTarefa,
-    IReadOnlyList<DistribuicaoCategoriaResponse> PorCategoria);
+    IReadOnlyList<DistribuicaoCategoriaResponse> PorCategoria,
+    DateOnly? De,
+    DateOnly? Ate);

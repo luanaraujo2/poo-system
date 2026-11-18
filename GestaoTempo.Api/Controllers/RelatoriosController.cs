@@ -18,11 +18,16 @@ public class RelatoriosController : ControllerAutenticado
     }
 
     // US14 - Relatório de desempenho: prazos, tempo estimado x real e distribuição por categoria.
+    // "de" e "ate" (opcionais, formato aaaa-mm-dd) limitam o relatório às tarefas com prazo dentro do período.
     [HttpGet("desempenho")]
-    public async Task<ActionResult<RelatorioDesempenhoResponse>> Desempenho()
+    public async Task<ActionResult<RelatorioDesempenhoResponse>> Desempenho(
+        [FromQuery] DateOnly? de = null,
+        [FromQuery] DateOnly? ate = null)
     {
         if (UsuarioAtual.Id is not int usuarioId)
             return NaoIdentificado();
+        if (de is DateOnly inicio && ate is DateOnly fim && inicio > fim)
+            return BadRequest(new ErroResponse("A data inicial do período deve ser igual ou anterior à data final."));
 
         var agora = DateTime.Now;
 
@@ -33,9 +38,11 @@ public class RelatoriosController : ControllerAutenticado
         var categoriasPorId = categorias.ToDictionary(c => c.Id);
 
         // Usa apenas tarefas principais para não contar o tempo das subtarefas duas vezes.
-        var tarefas = await _db.Tarefas
+        var tarefas = (await _db.Tarefas
             .Where(t => t.UsuarioId == usuarioId && t.TarefaPaiId == null)
-            .ToListAsync();
+            .ToListAsync())
+            .Where(t => PrazoNoPeriodo(t.Prazo, de, ate))
+            .ToList();
 
         var concluidas = tarefas.Where(t => t.Status == StatusTarefa.Concluida).ToList();
         int entreguesNoPrazo = concluidas.Count(t => t.ConcluidaNoPrazo());
@@ -113,6 +120,13 @@ public class RelatoriosController : ControllerAutenticado
             .ThenBy(c => c.CategoriaId)
             .ToList();
 
-        return new RelatorioDesempenhoResponse(resumoPrazos, tempoResumo, tempoPorTarefa, porCategoria);
+        return new RelatorioDesempenhoResponse(resumoPrazos, tempoResumo, tempoPorTarefa, porCategoria, de, ate);
+    }
+
+    // O dia do prazo é comparado no horário local, o mesmo que o usuário vê na tela.
+    private static bool PrazoNoPeriodo(DateTime prazo, DateOnly? de, DateOnly? ate)
+    {
+        var dia = DateOnly.FromDateTime(prazo.ToLocalTime());
+        return (de is null || dia >= de) && (ate is null || dia <= ate);
     }
 }

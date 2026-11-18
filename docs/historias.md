@@ -155,3 +155,4 @@ Tarefas atrasadas permanecem no topo também no modo manual; a ordem manual pode
 | Tarefas entregues no prazo e atrasadas | Pronto. `GET /api/relatorios/desempenho` e seção "Prazos e entregas" na tela "Relatório de desempenho" |
 | Tempo estimado comparado com o tempo real gasto | Pronto. Comparação total e por tarefa concluída |
 | Distribuição das tarefas por categoria | Pronto. Barra proporcional e totais por categoria |
+| Ver o relatório de um período (semana, mês ou datas escolhidas) | Pronto na API: `?de=` e `?ate=` contam só as tarefas com prazo no período. A tela ainda mostra tudo; o filtro entra junto com o visual novo |

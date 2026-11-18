@@ -795,6 +795,18 @@ X-Usuario-Id: {{usuario}}
 GET {{host}}/api/relatorios/desempenho
 X-Usuario-Id: {{usuario}}
 
-### 73. US11 - Limpar blocos criados no teste (esperado: 204)
+### 73. US14 - Relatório só das tarefas com prazo no período (esperado: 200)
+GET {{host}}/api/relatorios/desempenho?de=2000-01-01&ate=2100-12-31
+X-Usuario-Id: {{usuario}}
+
+### 74. US14 - Relatório de um período sem tarefas, volta tudo zerado (esperado: 200)
+GET {{host}}/api/relatorios/desempenho?de=2000-01-01&ate=2000-01-31
+X-Usuario-Id: {{usuario}}
+
+### 75. US14 - Relatório com data inicial depois da final (esperado: 400)
+GET {{host}}/api/relatorios/desempenho?de=2026-12-31&ate=2026-01-01
+X-Usuario-Id: {{usuario}}
+
+### 76. US11 - Limpar blocos criados no teste (esperado: 204)
 DELETE {{host}}/api/disponibilidades/{{blocoPlanejamento.response.body.id}}
 X-Usuario-Id: {{usuario}}
