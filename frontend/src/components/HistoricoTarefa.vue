@@ -23,7 +23,7 @@
             </template>
             <template v-else>Cadastrada como {{ STATUS[registro.statusNovo] }}</template>
           </span>
-          <span class="dica">{{ formatarPrazo(registro.alteradoEm) }}</span>
+          <span class="dica">{{ formatarDataHora(registro.alteradoEm) }}</span>
           <span v-if="registro.tempoNoStatus !== null" class="dica">
             {{ indice === registros.length - 1 ? 'Está assim há' : 'Ficou assim por' }} {{ formatarIntervalo(registro.tempoNoStatus) }}
           </span>
@@ -38,7 +38,7 @@ import { computed, ref, watch } from 'vue'
 import Message from 'primevue/message'
 
 import { api } from '../servicos/api'
-import { STATUS, formatarPrazo } from '../constantes'
+import { STATUS, formatarDataHora } from '../constantes'
 
 const props = defineProps({ tarefa: { type: Object, required: true } })
 

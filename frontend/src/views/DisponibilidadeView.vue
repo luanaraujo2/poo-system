@@ -12,17 +12,34 @@
 
     <template v-else>
       <p class="dica">Cadastre os períodos em que você costuma ter tempo livre em cada dia da semana.</p>
+      <Message v-if="erroEdicao" severity="error" :closable="false" class="aviso-lista">{{ erroEdicao }}</Message>
       <ul v-if="blocos.length" class="lista">
         <li v-for="bloco in blocos" :key="bloco.id" class="item">
           <template v-if="editando?.id === bloco.id">
             <div class="campos-edicao">
               <Select v-model="editando.diaSemana" :options="DIAS" option-label="label" option-value="value" aria-label="Dia da semana" />
-              <InputText v-model="editando.horaInicio" type="time" aria-label="Hora de início" />
+              <InputText
+                :model-value="editando.horaInicio"
+                inputmode="numeric"
+                maxlength="5"
+                placeholder="09:00"
+                autocomplete="off"
+                aria-label="Hora de início"
+                @input="(e) => formatarHoraCampo(e, editando, 'horaInicio')"
+              />
               <span>até</span>
-              <InputText v-model="editando.horaFim" type="time" aria-label="Hora de fim" />
+              <InputText
+                :model-value="editando.horaFim"
+                inputmode="numeric"
+                maxlength="5"
+                placeholder="12:00"
+                autocomplete="off"
+                aria-label="Hora de fim"
+                @input="(e) => formatarHoraCampo(e, editando, 'horaFim')"
+              />
             </div>
             <Button icon="pi pi-check" text rounded aria-label="Salvar alteração" :loading="salvando" @click="salvarEdicao" />
-            <Button icon="pi pi-times" severity="secondary" text rounded aria-label="Cancelar" @click="editando = null" />
+            <Button icon="pi pi-times" severity="secondary" text rounded aria-label="Cancelar" @click="cancelarEdicao" />
           </template>
           <template v-else>
             <div class="texto">
@@ -45,9 +62,34 @@
             <Select v-model="novo.diaSemana" input-id="dia-disponibilidade" :options="DIAS" option-label="label" option-value="value" placeholder="Selecione o dia" fluid />
           </div>
           <div class="horarios">
-            <div class="campo"><label for="inicio-disponibilidade">Hora de início</label><InputText id="inicio-disponibilidade" v-model="novo.horaInicio" type="time" required fluid /></div>
-            <div class="campo"><label for="fim-disponibilidade">Hora de fim</label><InputText id="fim-disponibilidade" v-model="novo.horaFim" type="time" required fluid /></div>
+            <div class="campo">
+              <label for="inicio-disponibilidade">Hora de início</label>
+              <InputText
+                id="inicio-disponibilidade"
+                :model-value="novo.horaInicio"
+                inputmode="numeric"
+                maxlength="5"
+                placeholder="ex.: 09:00"
+                autocomplete="off"
+                fluid
+                @input="(e) => formatarHoraCampo(e, novo, 'horaInicio')"
+              />
+            </div>
+            <div class="campo">
+              <label for="fim-disponibilidade">Hora de fim</label>
+              <InputText
+                id="fim-disponibilidade"
+                :model-value="novo.horaFim"
+                inputmode="numeric"
+                maxlength="5"
+                placeholder="ex.: 12:00"
+                autocomplete="off"
+                fluid
+                @input="(e) => formatarHoraCampo(e, novo, 'horaFim')"
+              />
+            </div>
           </div>
+          <span class="dica">Formato 24h (digite só os números, ex.: 0900 para 09:00).</span>
           <Button type="submit" label="Adicionar bloco" icon="pi pi-plus" :loading="salvando" fluid />
         </form>
       </section>
@@ -75,6 +117,7 @@ const carregando = ref(true)
 const salvando = ref(false)
 const excluindo = ref(null)
 const erro = ref('')
+const erroEdicao = ref('')
 const erroFormulario = ref('')
 const editando = ref(null)
 const novo = ref({ diaSemana: null, horaInicio: '', horaFim: '' })
@@ -83,12 +126,26 @@ const nomeDia = (valor) => DIAS.find((dia) => dia.value === valor)?.label ?? val
 const hora = (valor) => valor?.slice(0, 5) ?? ''
 const horarioJson = (valor) => `${valor}:00`
 
+function formatarHoraCampo(evento, alvo, campo) {
+  const digitos = evento.target.value.replace(/\D/g, '').slice(0, 4)
+  const formatado = digitos.length > 2 ? `${digitos.slice(0, 2)}:${digitos.slice(2)}` : digitos
+  alvo[campo] = formatado
+  evento.target.value = formatado
+}
+
+function horaValida(texto) {
+  if (!/^\d{2}:\d{2}$/.test(texto)) return false
+  const [h, m] = texto.split(':').map(Number)
+  return h <= 23 && m <= 59
+}
+
 async function carregar() {
   try { blocos.value = await api('/disponibilidades') } catch (e) { erro.value = e.message } finally { carregando.value = false }
 }
 
 function validarHorario(inicio, fim) {
   if (!inicio || !fim) return 'Informe a hora de início e a hora de fim.'
+  if (!horaValida(inicio) || !horaValida(fim)) return 'Hora inválida. Use o formato 24h, ex.: 09:00 até 12:00.'
   if (fim <= inicio) return 'A hora de fim deve ser maior que a hora de início.'
   return ''
 }
@@ -112,21 +169,26 @@ async function criar() {
 
 function iniciarEdicao(bloco) {
   editando.value = { ...bloco, horaInicio: hora(bloco.horaInicio), horaFim: hora(bloco.horaFim) }
-  erroFormulario.value = ''
+  erroEdicao.value = ''
+}
+
+function cancelarEdicao() {
+  editando.value = null
+  erroEdicao.value = ''
 }
 
 async function salvarEdicao() {
   const atual = editando.value
-  erroFormulario.value = validarHorario(atual.horaInicio, atual.horaFim)
-  if (erroFormulario.value) return
+  erroEdicao.value = validarHorario(atual.horaInicio, atual.horaFim)
+  if (erroEdicao.value) return
   salvando.value = true
   try {
     const salvo = await api(`/disponibilidades/${atual.id}`, { metodo: 'PUT', corpo: corpo(atual.diaSemana, atual.horaInicio, atual.horaFim) })
     blocos.value = blocos.value.map((bloco) => bloco.id === salvo.id ? salvo : bloco)
       .sort((a, b) => DIAS.findIndex((d) => d.value === a.diaSemana) - DIAS.findIndex((d) => d.value === b.diaSemana) || a.horaInicio.localeCompare(b.horaInicio))
     editando.value = null
-    erroFormulario.value = ''
-  } catch (e) { erroFormulario.value = e.message } finally { salvando.value = false }
+    erroEdicao.value = ''
+  } catch (e) { erroEdicao.value = e.message } finally { salvando.value = false }
 }
 
 async function excluir(bloco) {
@@ -141,14 +203,22 @@ onMounted(carregar)
 </script>
 
 <style scoped>
+.topo { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.voltar { width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center; color: var(--sgt-texto); text-decoration: none; }
+.voltar .pi { font-size: 18px; }
+h1 { margin: 0; font-size: 18px; }
+.espaco { width: 34px; }
+.carregando { display: flex; justify-content: center; padding: 48px 0; }
+.aviso-lista { margin-top: 12px; }
 .lista { list-style: none; margin: 16px 0 24px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .item { min-height: 56px; display: flex; align-items: center; gap: 4px; padding: 8px 10px 8px 14px; background: #fff; border: 1px solid var(--sgt-borda); border-radius: 10px; }
 .texto { display: flex; flex: 1; flex-direction: column; gap: 3px; }
 .nome { font-weight: 600; }
 .campos-edicao { display: flex; flex: 1; align-items: center; gap: 6px; flex-wrap: wrap; }
 .campos-edicao :deep(.p-select) { min-width: 140px; }
-.campos-edicao input { width: 108px; }
+.campos-edicao input { width: 78px; }
 .grupo { margin-top: 28px; }
+.formulario { display: flex; flex-direction: column; gap: 12px; }
 .horarios { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .vazio { margin-top: 24px; padding: 28px 18px; border: 1px dashed #c9d1da; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
 .vazio .pi { font-size: 28px; color: #9aa6b2; }

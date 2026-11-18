@@ -14,6 +14,7 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 | Editar tarefa (com Excluir e Histórico) | `/tarefas/{id}` | US05 e US12 | `views/NovaTarefaView.vue`, em modo edição |
 | Categorias | `/categorias` | US04 | `views/CategoriasView.vue` |
 | Disponibilidade | `/disponibilidade` | US08 | `views/DisponibilidadeView.vue` |
+| Histórico das tarefas | `/historico` | US12 | `views/HistoricoView.vue` |
 | Planejamento semanal | `/planejamento` | US11 | `views/PlanejamentoView.vue` |
 | Relatório de desempenho | `/relatorio` | US14 | `views/RelatorioView.vue` |
 
@@ -32,6 +33,7 @@ Vue 3 com PrimeVue 4 (tema Aura com o azul `#2457A6` do protótipo da Sprint 2),
 | `src/components/SubtarefasTarefa.vue` | Lista de subtarefas, soma das estimativas e botão "Adicionar subtarefa" (US06) |
 | `src/components/HistoricoTarefa.vue` | Linha do tempo de mudanças de status e tempo em cada etapa (US12) |
 | `src/views/DisponibilidadeView.vue` | Cadastro, edição e exclusão dos blocos semanais de tempo livre (US08) |
+| `src/views/HistoricoView.vue` | Visão geral do histórico de status e gargalos de todas as tarefas (US12) |
 | `src/views/PlanejamentoView.vue` | Geração do planejamento semanal, lista "sem espaço" e mover tarefa entre blocos (US11) |
 | `src/views/RelatorioView.vue` | Relatório de prazos, tempo estimado × real e distribuição por categoria (US14) |
 | `src/views/TarefasView.vue` | Lista, filtros, alerta de sobrecarga (US09), ordem (US10) e lembretes (US13) |
@@ -106,7 +108,8 @@ Os erros de regra voltam da API como `{ "mensagem": "..." }` e a tela mostra ess
 
 ## Histórico de status (US12)
 
-- Na tela "Editar tarefa", o quadro **Histórico** mostra a linha do tempo de cada mudança de status com data e hora, além do tempo gasto em cada etapa e onde a tarefa ficou parada por mais tempo.
+- Abre pelo botão **Histórico** em "Minhas tarefas" (`/historico`), com filtro por situação ou por tarefa específica.
+- Também aparece na tela "Editar tarefa" no quadro **Histórico**, mostrando a linha do tempo de cada mudança de status com data e hora, o tempo em cada etapa e onde a tarefa ficou parada por mais tempo.
 
 ## Lembretes (US13)
 

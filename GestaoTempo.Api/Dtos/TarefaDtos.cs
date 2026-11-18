@@ -45,6 +45,19 @@ public record TarefaResponse(
 // US12 - Uma mudança de status. StatusAnterior vem nulo no registro do cadastro.
 public record HistoricoStatusResponse(StatusTarefa? StatusAnterior, StatusTarefa StatusNovo, DateTime AlteradoEm);
 
+// US12 - Visão geral do histórico por tarefa do usuário.
+public record TarefaHistoricoResponse(
+    int TarefaId,
+    string Titulo,
+    StatusTarefa StatusAtual,
+    string Categoria,
+    string CategoriaCor,
+    DateTime Prazo,
+    DateTime CriadoEm,
+    DateTime? ConcluidoEm,
+    int? TarefaPaiId,
+    IReadOnlyList<HistoricoStatusResponse> Historico);
+
 // US13 - Lembrete que está valendo agora (entre LembrarEm e o prazo).
 public record LembreteResponse(int TarefaId, string Titulo, DateTime Prazo, int LembreteMin, DateTime LembrarEm);
 
