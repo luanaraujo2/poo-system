@@ -23,6 +23,7 @@ Base: `http://localhost:5224`. Tudo em JSON, com campos em camelCase. Enums traf
 | DELETE | `/api/tarefas/{id}` | Exclui a tarefa e as subtarefas dela (US05) | 204, 401, 404 |
 | PATCH | `/api/tarefas/{id}/status` | Muda o status; para concluir, informa o tempo real (US07) | 200, 400, 401, 404 |
 | POST | `/api/tarefas/{idPai}/subtarefas/{idFilha}` | Vincula uma tarefa já cadastrada como subtarefa (US06) | 204, 400, 401, 404 |
+| GET | `/api/tarefas/historico` | Lista o histórico de todas as tarefas do usuário (US12) | 200, 401 |
 | GET | `/api/tarefas/{id}/historico` | Lista as mudanças de status da tarefa, com data e hora (US12) | 200, 401, 404 |
 | GET | `/api/tarefas/lembretes` | Lista os lembretes ativos antes do prazo (US13) | 200, 401 |
 | POST | `/api/tarefas/{id}/lembrete/dispensar` | Dispensa o lembrete ativo da tarefa (US13) | 204, 400, 401, 404 |
@@ -196,7 +197,8 @@ Quando `sobrecargaMin` é maior que zero, a tela "Minhas tarefas" mostra o exces
 
 ## Histórico de status (US12)
 
-`GET /api/tarefas/{id}/historico` lista, em ordem cronológica, todas as mudanças de status da tarefa (`statusAnterior`, `statusNovo` e `alteradoEm`). No cadastro inicial, `statusAnterior` vem nulo.
+- `GET /api/tarefas/{id}/historico` lista, em ordem cronológica, todas as mudanças de status da tarefa (`statusAnterior`, `statusNovo` e `alteradoEm`). No cadastro inicial, `statusAnterior` vem nulo.
+- `GET /api/tarefas/historico` devolve a lista de tarefas do usuário com seus respectivos históricos, para a tela dedicada de histórico.
 
 ## Lembretes (US13)
 

@@ -138,7 +138,7 @@ Tarefas atrasadas permanecem no topo também no modo manual; a ordem manual pode
 | Critério | Situação |
 |---|---|
 | Toda mudança de status registrada com data e hora | Pronto. `HistoricoStatus` gravado no cadastro e em toda alteração real em `Tarefa.AlterarStatus` |
-| Ver o histórico de cada tarefa para entender onde travou | Pronto. `GET /api/tarefas/{id}/historico` e quadro "Histórico" em "Editar tarefa", destacando o status em que ficou mais tempo |
+| Ver o histórico de cada tarefa para entender onde travou | Pronto. `GET /api/tarefas/historico`, `GET /api/tarefas/{id}/historico`, tela "Histórico" (`/historico`) e quadro "Histórico" em "Editar tarefa", destacando o status em que ficou mais tempo |
 
 ## US13 - Receber lembretes (Sprint 6)
 

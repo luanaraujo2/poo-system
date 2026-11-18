@@ -242,6 +242,69 @@ public class TarefasController : ControllerAutenticado
         return NoContent();
     }
 
+    // US12 - Visão geral do histórico de todas as tarefas do usuário.
+    [HttpGet("historico")]
+    public async Task<ActionResult<List<TarefaHistoricoResponse>>> HistoricoGeral()
+    {
+        if (UsuarioAtual.Id is not int usuarioId)
+            return NaoIdentificado();
+
+        var tarefas = await (
+            from t in _db.Tarefas
+            join c in _db.Categorias on t.CategoriaId equals c.Id
+            where t.UsuarioId == usuarioId
+            select new
+            {
+                t.Id,
+                t.Titulo,
+                t.Status,
+                Categoria = c.Nome,
+                CategoriaCor = c.Cor,
+                t.Prazo,
+                t.CriadoEm,
+                t.ConcluidoEm,
+                t.TarefaPaiId
+            })
+            .ToListAsync();
+
+        var idsTarefas = tarefas.Select(t => t.Id).ToList();
+        var registros = await _db.HistoricosStatus
+            .Where(h => idsTarefas.Contains(h.TarefaId))
+            .OrderBy(h => h.AlteradoEm)
+            .ThenBy(h => h.Id)
+            .ToListAsync();
+
+        var registrosPorTarefa = registros
+            .GroupBy(h => h.TarefaId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<HistoricoStatusResponse>)g
+                    .Select(h => new HistoricoStatusResponse(h.StatusAnterior, h.StatusNovo, h.AlteradoEm))
+                    .ToList());
+
+        return tarefas
+            .Select(t =>
+            {
+                var hist = registrosPorTarefa.TryGetValue(t.Id, out var lista)
+                    ? lista
+                    : Array.Empty<HistoricoStatusResponse>();
+                return new TarefaHistoricoResponse(
+                    t.Id,
+                    t.Titulo,
+                    t.Status,
+                    t.Categoria,
+                    t.CategoriaCor,
+                    t.Prazo,
+                    t.CriadoEm,
+                    t.ConcluidoEm,
+                    t.TarefaPaiId,
+                    hist);
+            })
+            .OrderByDescending(t => t.Historico.Count > 0 ? t.Historico[^1].AlteradoEm : t.CriadoEm)
+            .ThenByDescending(t => t.TarefaId)
+            .ToList();
+    }
+
     // US12 - Histórico de status da tarefa, do registro mais antigo para o mais novo.
     [HttpGet("{id:int}/historico")]
     public async Task<ActionResult<List<HistoricoStatusResponse>>> Historico(int id)

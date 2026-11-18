@@ -73,7 +73,7 @@ GestaoTempo.Api/               API web
   Services/                    UsuarioAtual, GeradorDeToken
   GestaoTempo.Api.http         testes manuais (extensão REST Client)
 frontend/                      telas em Vue + PrimeVue
-  src/views/                   EntrarView, CriarContaView, TarefasView, NovaTarefaView, CategoriasView, DisponibilidadeView, PlanejamentoView, RelatorioView
+  src/views/                   EntrarView, CriarContaView, TarefasView, NovaTarefaView, CategoriasView, DisponibilidadeView, HistoricoView, PlanejamentoView, RelatorioView
   src/components/              StatusTarefa (US07), SubtarefasTarefa (US06) e HistoricoTarefa (US12), usados na tela da tarefa
   src/servicos/                api.js (chamadas à API) e sessao.js (token do login)
 docs/                          documentação e script SQL

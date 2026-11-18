@@ -707,6 +707,10 @@ X-Usuario-Id: {{usuario}}
 GET {{host}}/api/tarefas/{{us06Pai.response.body.id}}/historico
 X-Usuario-Id: {{usuario}}
 
+### 62b. US12 - Histórico geral das tarefas do usuário (esperado: 200)
+GET {{host}}/api/tarefas/historico
+X-Usuario-Id: {{usuario}}
+
 ### 63. US13 - Cadastrar tarefa com prazo em 2 horas e lembrete padrão de 24h (esperado: 201)
 # @name tarefaLembrete
 POST {{host}}/api/tarefas

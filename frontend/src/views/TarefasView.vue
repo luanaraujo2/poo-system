@@ -6,7 +6,16 @@
   <main class="tela">
     <header class="topo">
       <span class="ola">Olá, {{ primeiroNome }}</span>
-      <Button label="Sair" icon="pi pi-sign-out" severity="secondary" text @click="sairDaConta" />
+      <div class="botoes-topo">
+        <Button
+          label="Categorias"
+          icon="pi pi-tags"
+          severity="secondary"
+          text
+          @click="router.push({ name: 'categorias' })"
+        />
+        <Button label="Sair" icon="pi pi-sign-out" severity="secondary" text @click="sairDaConta" />
+      </div>
     </header>
     <h1>Minhas tarefas</h1>
 
@@ -18,6 +27,14 @@
         outlined
         size="small"
         @click="router.push({ name: 'planejamento' })"
+      />
+      <Button
+        label="Histórico"
+        icon="pi pi-history"
+        severity="secondary"
+        outlined
+        size="small"
+        @click="router.push({ name: 'historico' })"
       />
       <Button
         label="Relatório"
@@ -34,14 +51,6 @@
         outlined
         size="small"
         @click="router.push({ name: 'disponibilidade' })"
-      />
-      <Button
-        label="Categorias"
-        icon="pi pi-tags"
-        severity="secondary"
-        outlined
-        size="small"
-        @click="router.push({ name: 'categorias' })"
       />
     </nav>
 
@@ -429,6 +438,12 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.botoes-topo {
+  display: flex;
+  gap: 2px;
+  margin-right: -10px;
 }
 
 .ola {
