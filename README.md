@@ -119,7 +119,7 @@ O `npm install` só é preciso na primeira vez. Abra `http://localhost:5173` e e
 
 ### Testar a API
 
-Abra `GestaoTempo.Api/GestaoTempo.Api.http` no VS Code (extensão REST Client) e clique em **Send Request** acima de cada teste. O resultado esperado está no título de cada um: A a G cobrem cadastro, login e token (US01 e US02), 1 a 12 cobrem as tarefas (US03), 13 a 16 cobrem as subtarefas, 17 a 26 cobrem as categorias (US04), 27 a 34 cobrem editar e excluir tarefa (US05), 35 a 53 cobrem subtarefas e status (US06 e US07), 54 a 60 cobrem disponibilidade (US08), 61 cobre o alerta semanal (US09) e 62 a 73 cobrem planejamento, histórico, lembretes e relatório (US11 a US14).
+Abra `GestaoTempo.Api/GestaoTempo.Api.http` no VS Code (extensão REST Client) e clique em **Send Request** acima de cada teste. O resultado esperado está no título de cada um: A a G cobrem cadastro, login e token (US01 e US02), 1 a 12 cobrem as tarefas (US03), 13 a 16 cobrem as subtarefas, 17 a 26 cobrem as categorias (US04), 27 a 34 cobrem editar e excluir tarefa (US05), 35 a 53 cobrem subtarefas e status (US06 e US07), 54 a 60 cobrem disponibilidade (US08), 61 cobre o alerta semanal (US09) e 62 a 76 cobrem planejamento, histórico, lembretes e relatório (US11 a US14), incluindo o filtro do relatório por período.
 
 Algo não funcionou? Veja [docs/problemas.md](docs/problemas.md).
 

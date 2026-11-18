@@ -29,7 +29,7 @@ Base: `http://localhost:5224`. Tudo em JSON, com campos em camelCase. Enums traf
 | GET | `/api/planejamento` | Consulta o planejamento salvo da semana e a lista "sem espaço" (US11) | 200, 401 |
 | POST | `/api/planejamento/gerar` | Distribui as tarefas abertas nos blocos da semana, antes do prazo (US11) | 200, 401 |
 | PATCH | `/api/planejamento/tarefas/{id}` | Move uma tarefa para outro bloco ou tira do bloco (US11) | 200, 400, 401, 404 |
-| GET | `/api/relatorios/desempenho` | Relatório de prazos, tempo estimado × real e categorias (US14) | 200, 401 |
+| GET | `/api/relatorios/desempenho` | Relatório de prazos, tempo estimado × real e categorias (US14). Aceita `?de=` e `?ate=` | 200, 400, 401 |
 
 Com exceção de criar conta e entrar, todas as rotas pedem `Authorization: Bearer <token>`. Só em Development, os testes do `.http` aceitam o cabeçalho `X-Usuario-Id: 1` no lugar do token.
 
@@ -209,7 +209,14 @@ Quando `sobrecargaMin` é maior que zero, a tela "Minhas tarefas" mostra o exces
 `GET /api/relatorios/desempenho` devolve:
 - `prazos`: totais de tarefas entregues no prazo, entregues atrasadas, abertas no prazo, abertas atrasadas, canceladas e taxa de pontualidade;
 - `tempoResumo` e `tempoPorTarefa`: comparação entre o tempo estimado e o tempo real gasto das tarefas principais concluídas;
-- `porCategoria`: distribuição de tarefas, status e tempos por categoria.
+- `porCategoria`: distribuição de tarefas, status e tempos por categoria;
+- `de` e `ate`: o período usado, ou `null` quando não foi informado.
+
+Filtro por período (opcional): `GET /api/relatorios/desempenho?de=2026-11-01&ate=2026-11-30`.
+- As datas vão no formato `aaaa-mm-dd` e as duas pontas entram no período.
+- O relatório passa a contar só as tarefas principais com **prazo** dentro do período. Vale para todos os blocos (prazos, tempo e categorias).
+- Pode mandar só `de` (dali em diante) ou só `ate` (até aquela data). Sem nenhum dos dois, conta todas as tarefas, como antes.
+- Se `de` for depois de `ate`, responde 400.
 
 ## Editar e excluir tarefa (US05)
 
